@@ -90,6 +90,7 @@ interface MindmapCanvasProps {
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
   onNodeUpdate: (currentId: string, patch: Partial<TreeNode>) => void;
+  onAddChild: (parentId: string) => void;
   exportRef: React.RefObject<(() => void) | null>;
 }
 
@@ -100,17 +101,23 @@ export function MindmapCanvas({
   selectedNodeId,
   onSelectNode,
   onNodeUpdate,
+  onAddChild,
   exportRef,
 }: MindmapCanvasProps) {
   const layout = useMemo(() => layoutTree(root), [root]);
   const shapeSignature = useMemo(() => getShapeSignature(root), [root]);
   const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layout.edges);
+  const [pinned, setPinned] = useState(false);
 
   const nodeTypes = useMemo(
     () => ({
       [TREE_NODE_TYPE]: (props: NodeProps<FlowNode>) => (
-        <TreeNodeCard {...props} onStatusChange={(status) => onNodeUpdate(props.id, { status })} />
+        <TreeNodeCard
+          {...props}
+          onStatusChange={(status) => onNodeUpdate(props.id, { status })}
+          onAssigneeChange={(assignee) => onNodeUpdate(props.id, { assignee })}
+        />
       ),
     }),
     [onNodeUpdate],
@@ -157,7 +164,9 @@ export function MindmapCanvas({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
-        onPaneClick={() => onSelectNode(null)}
+        onPaneClick={() => {
+          if (!pinned) onSelectNode(null);
+        }}
         fitView
       >
         <Background />
@@ -178,7 +187,10 @@ export function MindmapCanvas({
       <NodeDetailPanel
         node={selectedNode}
         root={root}
+        pinned={pinned}
+        onTogglePinned={() => setPinned((current) => !current)}
         onUpdate={onNodeUpdate}
+        onAddChild={onAddChild}
         onClose={() => onSelectNode(null)}
       />
     </div>
