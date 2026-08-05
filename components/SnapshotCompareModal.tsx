@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 
 import { diffTrees } from "@/lib/treeDiff";
-import type { TreeFile, TreeNode } from "@/lib/types";
+import type { PlatformInstance, TreeFile, TreeNode } from "@/lib/types";
 
 import { StatusBadge } from "./StatusBadge";
 import styles from "./SnapshotCompareModal.module.css";
@@ -14,13 +14,9 @@ interface VersionOption {
   root: TreeNode;
 }
 
-function buildVersionOptions(tree: TreeFile): VersionOption[] {
-  const current: VersionOption = {
-    key: "current",
-    label: `Current · updated ${new Date(tree.updatedAt).toLocaleString()}`,
-    root: tree.root,
-  };
-  const snapshots: VersionOption[] = tree.snapshots.map((snapshot, index) => ({
+function buildVersionOptions(platform: PlatformInstance): VersionOption[] {
+  const current: VersionOption = { key: "current", label: "Current", root: platform.root };
+  const snapshots: VersionOption[] = platform.snapshots.map((snapshot, index) => ({
     key: snapshot.id,
     label: `Snapshot ${index + 1} · ${new Date(snapshot.capturedAt).toLocaleString()}`,
     root: snapshot.root,
@@ -30,13 +26,27 @@ function buildVersionOptions(tree: TreeFile): VersionOption[] {
 
 interface SnapshotCompareModalProps {
   tree: TreeFile;
+  initialPlatformId: string;
   onClose: () => void;
 }
 
-export function SnapshotCompareModal({ tree, onClose }: SnapshotCompareModalProps) {
-  const options = useMemo(() => buildVersionOptions(tree), [tree]);
+export function SnapshotCompareModal({ tree, initialPlatformId, onClose }: SnapshotCompareModalProps) {
+  const [platformId, setPlatformId] = useState(initialPlatformId);
+  const platform = tree.platforms.find((p) => p.id === platformId) ?? tree.platforms[0];
+
+  const options = useMemo(() => buildVersionOptions(platform), [platform]);
+
   const [beforeKey, setBeforeKey] = useState(options[1]?.key ?? options[0].key);
   const [afterKey, setAfterKey] = useState(options[0].key);
+
+  // Reset the before/after selection whenever a different platform is picked
+  // (same render-time-adjustment pattern MindmapCanvas uses for its layout).
+  const [platformForKeys, setPlatformForKeys] = useState(platform);
+  if (platformForKeys !== platform) {
+    setPlatformForKeys(platform);
+    setBeforeKey(options[1]?.key ?? options[0].key);
+    setAfterKey(options[0].key);
+  }
 
   const beforeOption = options.find((option) => option.key === beforeKey) ?? options[0];
   const afterOption = options.find((option) => option.key === afterKey) ?? options[0];
@@ -52,16 +62,32 @@ export function SnapshotCompareModal({ tree, onClose }: SnapshotCompareModalProp
     <div className={styles.overlay} onClick={onClose}>
       <div className={styles.modal} onClick={(event) => event.stopPropagation()}>
         <div className={styles.headerRow}>
-          <h2 className={styles.title}>Compare versions — {tree.name}</h2>
+          <h2 className={styles.title}>
+            Compare versions — {tree.name}
+            {tree.platforms.length > 1 ? ` · ${platform.name}` : ""}
+          </h2>
           <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
-        {tree.snapshots.length === 0 ? (
+        {tree.platforms.length > 1 && (
+          <label className={styles.selectField}>
+            Platform
+            <select value={platformId} onChange={(event) => setPlatformId(event.target.value)}>
+              {tree.platforms.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
+
+        {platform.snapshots.length === 0 ? (
           <p className={styles.hint}>
-            This tree has no snapshot history yet — save it again after making a change to start
-            comparing versions.
+            This platform has no snapshot history yet — save it again after making a change to
+            start comparing versions.
           </p>
         ) : (
           <>
