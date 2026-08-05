@@ -1,5 +1,6 @@
 export const MAX_SNAPSHOTS_PER_SLOT = 10;
 export const TREE_SLOT_COUNT = 5;
+export const MAX_PLATFORMS_PER_SLOT = 3;
 export type TreeSlot = 1 | 2 | 3 | 4 | 5;
 
 export interface TreeNode {
@@ -18,14 +19,21 @@ export interface TreeSnapshot {
   root: TreeNode;
 }
 
+export interface PlatformInstance {
+  id: string;
+  name: string;
+  root: TreeNode;
+  snapshots: TreeSnapshot[];
+}
+
 export interface TreeFile {
-  schemaVersion: 1;
+  schemaVersion: 2;
   id: string;
   name: string;
   createdAt: string;
   updatedAt: string;
-  root: TreeNode;
-  snapshots: TreeSnapshot[];
+  platforms: PlatformInstance[];
+  activePlatformId: string;
 }
 
 export interface TreeSlotSummary {
@@ -33,5 +41,6 @@ export interface TreeSlotSummary {
   occupied: boolean;
   name?: string;
   updatedAt?: string;
+  platformCount?: number;
   snapshotCount?: number;
 }

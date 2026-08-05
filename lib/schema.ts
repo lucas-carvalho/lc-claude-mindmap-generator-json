@@ -1,5 +1,6 @@
 import { z } from "zod";
-import type { TreeFile, TreeNode, TreeSnapshot } from "./types";
+import type { PlatformInstance, TreeFile, TreeNode, TreeSnapshot } from "./types";
+import { MAX_PLATFORMS_PER_SLOT } from "./types";
 
 export const TreeNodeSchema: z.ZodType<TreeNode> = z.lazy(() =>
   z.object({
@@ -19,17 +20,31 @@ export const TreeSnapshotSchema: z.ZodType<TreeSnapshot> = z.object({
   root: TreeNodeSchema,
 });
 
-export const TreeFileSchema: z.ZodType<TreeFile> = z.object({
-  schemaVersion: z.literal(1),
+export const PlatformInstanceSchema: z.ZodType<PlatformInstance> = z.object({
   id: z.string().min(1),
-  name: z.string().min(1).max(100),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+  name: z.string().min(1).max(60),
   root: TreeNodeSchema,
   snapshots: z.array(TreeSnapshotSchema).default([]),
 });
 
+export const TreeFileSchema: z.ZodType<TreeFile> = z.object({
+  schemaVersion: z.literal(2),
+  id: z.string().min(1),
+  name: z.string().min(1).max(100),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  platforms: z.array(PlatformInstanceSchema).min(1).max(MAX_PLATFORMS_PER_SLOT),
+  activePlatformId: z.string().min(1),
+});
+
+export const PlatformSaveInputSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(60),
+  root: TreeNodeSchema,
+});
+
 export const TreeSaveRequestSchema = z.object({
   name: z.string().min(1).max(100),
-  root: TreeNodeSchema,
+  activePlatformId: z.string().min(1),
+  platforms: z.array(PlatformSaveInputSchema).min(1).max(MAX_PLATFORMS_PER_SLOT),
 });
