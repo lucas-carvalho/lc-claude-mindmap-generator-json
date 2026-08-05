@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { PointerEvent as ReactPointerEvent } from "react";
 import { Plus, Trash2 } from "lucide-react";
 
 import { collectAllIds } from "@/lib/treeUtils";
@@ -22,6 +23,7 @@ export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPan
   const [draftLabel, setDraftLabel] = useState(node?.label ?? "");
   const [draftType, setDraftType] = useState(node?.type ?? "");
   const [draftNotes, setDraftNotes] = useState(node?.notes ?? "");
+  const [draftAssignee, setDraftAssignee] = useState(node?.assignee ?? "");
   const [metadataRows, setMetadataRows] = useState<Array<[string, string]>>(
     Object.entries(node?.metadata ?? {}),
   );
@@ -36,11 +38,46 @@ export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPan
     setDraftLabel(node.label);
     setDraftType(node.type ?? "");
     setDraftNotes(node.notes ?? "");
+    setDraftAssignee(node.assignee ?? "");
     setMetadataRows(Object.entries(node.metadata ?? {}));
     setIdError(null);
   }
 
+  // Dragging: position persists across node switches while the panel stays
+  // open, and only resets to the default corner once it's fully closed
+  // (node becomes null) and later reopens.
+  const [wasOpen, setWasOpen] = useState(node !== null);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const dragStartRef = useRef<{ x: number; y: number; offsetX: number; offsetY: number } | null>(null);
+
+  if (node && !wasOpen) {
+    setWasOpen(true);
+    setOffset({ x: 0, y: 0 });
+  } else if (!node && wasOpen) {
+    setWasOpen(false);
+  }
+
   if (!node) return null;
+
+  const handleHeaderPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("[data-no-drag]")) return;
+    dragStartRef.current = { x: event.clientX, y: event.clientY, offsetX: offset.x, offsetY: offset.y };
+    setDragging(true);
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handleHeaderPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!dragging || !dragStartRef.current) return;
+    const dx = event.clientX - dragStartRef.current.x;
+    const dy = event.clientY - dragStartRef.current.y;
+    setOffset({ x: dragStartRef.current.offsetX + dx, y: dragStartRef.current.offsetY + dy });
+  };
+
+  const handleHeaderPointerUp = () => {
+    setDragging(false);
+    dragStartRef.current = null;
+  };
 
   const commitLabel = () => {
     const trimmed = draftLabel.trim();
@@ -54,6 +91,10 @@ export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPan
 
   const commitNotes = () => {
     onUpdate(node.id, { notes: draftNotes.trim() || undefined });
+  };
+
+  const commitAssignee = () => {
+    onUpdate(node.id, { assignee: draftAssignee.trim() || undefined });
   };
 
   const commitId = () => {
@@ -84,10 +125,22 @@ export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPan
   };
 
   return (
-    <aside className={styles.panel}>
-      <div className={styles.headerRow}>
+    <aside className={styles.panel} style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}>
+      <div
+        className={styles.headerRow}
+        onPointerDown={handleHeaderPointerDown}
+        onPointerMove={handleHeaderPointerMove}
+        onPointerUp={handleHeaderPointerUp}
+        style={{ cursor: dragging ? "grabbing" : "grab" }}
+      >
         <h2 className={styles.title}>Edit node</h2>
-        <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
+        <button
+          type="button"
+          className={styles.closeButton}
+          onClick={onClose}
+          aria-label="Close"
+          data-no-drag
+        >
           ×
         </button>
       </div>
@@ -126,6 +179,17 @@ export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPan
             </option>
           ))}
         </select>
+      </label>
+
+      <label className={styles.field}>
+        Assignee
+        <input
+          className={styles.input}
+          value={draftAssignee}
+          placeholder="Full name"
+          onChange={(event) => setDraftAssignee(event.target.value)}
+          onBlur={commitAssignee}
+        />
       </label>
 
       <label className={styles.field}>
