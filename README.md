@@ -1,36 +1,86 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Mindmap Generator JSON by LC
 
-## Getting Started
+A local, single-user prototype that renders a fixed-template mindmap
+visualization over abstracted, generic tree data — the kind of thing you'd
+use to visualize a hierarchy of features → scenarios → test cases with a
+pass/fail-style status per node.
 
-First, run the development server:
+There is no database and no server-side integration with anything beyond
+this app's own filesystem: trees are plain JSON, and persistence is a
+handful of local API routes reading/writing `data/trees/*.json`.
+
+## What it does
+
+- Renders a tree (`root` node with nested `children`) as an interactive
+  mindmap using React Flow, laid out automatically with `dagre` every time
+  a tree loads — the layout algorithm and node styling are the "fixed
+  template"; only the data changes.
+- Ships with one bundled **sample tree** that's always available and never
+  counts as a saved slot on its own.
+- Supports **up to 5 independent, persisted trees** ("slots"): save the
+  current tree into any slot, load a previously saved slot, or delete one.
+- Supports **uploading** a tree from an external `.json` file (validated
+  client-side against the same schema the API uses) without touching the
+  server at all.
+- Tracks a **snapshot history per slot**: saving over an already-occupied
+  slot pushes its previous state into that slot's own history (capped at
+  10 versions), and you can compare any two versions of the *same* tree to
+  see what changed — never across two different trees.
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Data model
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Every tree is a `TreeFile` (see [`lib/types.ts`](lib/types.ts) and the
+matching [`lib/schema.ts`](lib/schema.ts) zod validation):
 
-## Learn More
+```ts
+interface TreeNode {
+  id: string;
+  label: string;
+  type?: string;       // e.g. "feature" | "scenario" | "testcase" | "group"
+  status?: string;      // e.g. "passed" | "failed" | "blocked" | "pending" | "not-run"
+  notes?: string;
+  metadata?: Record<string, string>;
+  children: TreeNode[];
+}
 
-To learn more about Next.js, take a look at the following resources:
+interface TreeFile {
+  schemaVersion: 1;
+  id: string;
+  name: string;
+  createdAt: string;
+  updatedAt: string;
+  root: TreeNode;
+  snapshots: TreeSnapshot[]; // this slot's own version history
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Verification
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+This project is checked with:
 
-## Deploy on Vercel
+```bash
+npx tsc --noEmit
+npm run lint
+npm run build
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The persistence and diff logic were also verified directly (not just by
+type-checking): `curl` against the running dev server for the `/api/trees`
+routes (save/load/delete, snapshot-on-save, invalid input), and a standalone
+script run through `tsx` for `lib/treeDiff.ts`'s added/removed/changed
+classification.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Where this can't go as-is
+
+This is a local prototype by design — no accounts, no database, no network
+hardening. [`docs/PRODUCTIONIZING.md`](docs/PRODUCTIONIZING.md) lays out,
+generically, what a real hosted/multi-user version would still need.
