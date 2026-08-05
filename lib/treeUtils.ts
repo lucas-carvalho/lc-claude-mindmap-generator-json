@@ -39,6 +39,31 @@ export function getInitials(name: string): string {
   return (words[0][0] + words[words.length - 1][0]).toUpperCase();
 }
 
+// Deliberately avoids red/orange/green/blue/gray — those are already the
+// semantic Status colors (see StatusBadge's STATUS_META) — so an assignee
+// avatar is never mistaken for a status signal.
+const ASSIGNEE_PALETTE = [
+  "#475569",
+  "#4f46e5",
+  "#0d9488",
+  "#7c3aed",
+  "#0891b2",
+  "#a21caf",
+  "#78716c",
+  "#0369a1",
+];
+
+/** Deterministic per-name color, so the same person always gets the same
+ * avatar color across the whole diagram regardless of which branch/node
+ * they're assigned to. */
+export function getAssigneeColor(name: string): string {
+  let hash = 0;
+  for (let i = 0; i < name.length; i += 1) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  return ASSIGNEE_PALETTE[hash % ASSIGNEE_PALETTE.length];
+}
+
 export type FlowNode = Node<TreeNodeData>;
 export type FlowEdge = Edge;
 

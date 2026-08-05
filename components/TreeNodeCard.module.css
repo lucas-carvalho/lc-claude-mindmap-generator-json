@@ -2,28 +2,91 @@
   position: relative;
   min-width: 200px;
   max-width: 220px;
-  padding: 10px 12px;
+  /* Extra top padding gives the corner-overlapping avatar (see
+     .avatarWrapper) room to sit above the header row without the two
+     ever visually touching. */
+  padding: 18px 12px 10px;
   border-radius: 14px;
   border: 2px solid transparent;
   background: var(--background);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
-.avatar {
+.avatarWrapper {
   position: absolute;
-  top: -8px;
-  left: -8px;
+  /* Overlaps the top-right corner (partly outside the card, still
+     touching the border) — the opposite corner from the status
+     control in .headerRow, so a bigger avatar never collides with it. */
+  top: -10px;
+  right: -10px;
+  z-index: 2;
+}
+
+.avatarTrigger {
+  display: flex;
+  border: none;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.avatar,
+.avatarPlaceholder {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
   border: 2px solid var(--background);
-  font-size: 9px;
+}
+
+.avatar {
+  font-size: 10px;
   font-weight: 700;
   color: #fff;
-  z-index: 1;
+}
+
+.avatarPlaceholder {
+  color: color-mix(in srgb, currentColor 45%, transparent);
+  background: color-mix(in srgb, currentColor 10%, var(--background));
+}
+
+.assigneePopover {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  padding: 8px;
+  width: 160px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  background: var(--background);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  z-index: 20;
+}
+
+.assigneeLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.assigneeInput {
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: normal;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  background: var(--background);
+  color: var(--foreground);
 }
 
 .root {
