@@ -42,12 +42,29 @@ export function getInitials(name: string): string {
 export type FlowNode = Node<TreeNodeData>;
 export type FlowEdge = Edge;
 
-export function generateNodeId(): string {
-  return crypto.randomUUID();
+function slugify(text: string): string {
+  return (
+    text
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "") || "node"
+  );
 }
 
-export function createChildNode(label: string): TreeNode {
-  return { id: generateNodeId(), label, children: [] };
+/**
+ * The new id always builds on the parent's id plus a slug of the label
+ * ("inherits the parent's id logic, complemented by an objective
+ * abstraction of the label"), deduped against every id already in the
+ * tree. Only derived once at creation time — id stays a stable,
+ * independently-editable field afterward, same as everywhere else.
+ */
+export function generateChildId(parentId: string, label: string, existingIds: Set<string>): string {
+  const base = `${parentId}-${slugify(label)}`;
+  if (!existingIds.has(base)) return base;
+  let suffix = 2;
+  while (existingIds.has(`${base}-${suffix}`)) suffix += 1;
+  return `${base}-${suffix}`;
 }
 
 function subtreeSize(node: TreeNode): number {
