@@ -9,6 +9,7 @@ export const TreeNodeSchema: z.ZodType<TreeNode> = z.lazy(() =>
     type: z.string().optional(),
     status: z.string().optional(),
     notes: z.string().optional(),
+    assignee: z.string().optional(),
     metadata: z.record(z.string(), z.string()).optional(),
     children: z.array(TreeNodeSchema).default([]),
   }),

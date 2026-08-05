@@ -28,6 +28,7 @@ const sampleRoot: TreeNode = node(
           type: "test case",
           status: "failed",
           notes: "Lockout threshold changed recently — verify against current spec.",
+          assignee: "Jane Doe",
         }),
       ]),
       node({ id: "scenario-recovery", label: "Password recovery", type: "scenario" }, [

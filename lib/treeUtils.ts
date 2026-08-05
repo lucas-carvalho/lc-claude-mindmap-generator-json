@@ -25,9 +25,18 @@ export interface TreeNodeData extends Record<string, unknown> {
   type?: string;
   status?: string;
   notes?: string;
+  assignee?: string;
   metadata?: Record<string, string>;
   side: BranchSide;
   branchColor: string;
+}
+
+/** First letter of the first and last whitespace-separated word, uppercased. */
+export function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[words.length - 1][0]).toUpperCase();
 }
 
 export type FlowNode = Node<TreeNodeData>;
@@ -95,6 +104,7 @@ function visitBranch(
       type: node.type,
       status: node.status,
       notes: node.notes,
+      assignee: node.assignee,
       metadata: node.metadata,
       side,
       branchColor,
@@ -125,6 +135,7 @@ export function treeToFlowElements(root: TreeNode): { nodes: FlowNode[]; edges: 
         type: root.type,
         status: root.status,
         notes: root.notes,
+        assignee: root.assignee,
         metadata: root.metadata,
         side: "root",
         branchColor: ROOT_COLOR,

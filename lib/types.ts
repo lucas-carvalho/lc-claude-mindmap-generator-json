@@ -9,6 +9,7 @@ export interface TreeNode {
   type?: string;
   status?: string;
   notes?: string;
+  assignee?: string;
   metadata?: Record<string, string>;
   children: TreeNode[];
 }
