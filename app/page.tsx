@@ -4,6 +4,7 @@ import { useCallback, useState } from "react";
 
 import { MindmapCanvas } from "@/components/MindmapCanvas";
 import { SlotPickerModal } from "@/components/SlotPickerModal";
+import { SnapshotCompareModal } from "@/components/SnapshotCompareModal";
 import { Toolbar } from "@/components/Toolbar";
 import { sampleTree } from "@/data/sampleTree";
 import { deleteSlotRequest, fetchSlot, fetchSlots, saveSlot } from "@/lib/api";
@@ -17,6 +18,7 @@ export default function Home() {
   const [activeTree, setActiveTree] = useState<TreeFile>(sampleTree);
   const [activeSlot, setActiveSlot] = useState<TreeSlot | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
+  const [compareOpen, setCompareOpen] = useState(false);
   const [slots, setSlots] = useState<TreeSlotSummary[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,6 +94,7 @@ export default function Home() {
           <Toolbar
             onOpenSave={() => openModal("save")}
             onOpenLoad={() => openModal("load")}
+            onOpenCompare={() => setCompareOpen(true)}
             onResetSample={handleResetSample}
             onUploadTree={handleUploadTree}
           />
@@ -114,6 +117,9 @@ export default function Home() {
           }}
           onDeleteSlot={handleDeleteSlot}
         />
+      )}
+      {compareOpen && (
+        <SnapshotCompareModal tree={activeTree} onClose={() => setCompareOpen(false)} />
       )}
     </div>
   );
