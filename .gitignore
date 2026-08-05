@@ -39,3 +39,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local tree save slots (runtime data, not source)
+/data/trees/*.json
+!/data/trees/.gitkeep
