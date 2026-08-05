@@ -9,7 +9,8 @@ import { SnapshotCompareModal } from "@/components/SnapshotCompareModal";
 import { Toolbar } from "@/components/Toolbar";
 import { sampleTree } from "@/data/sampleTree";
 import { deleteSlotRequest, fetchSlot, fetchSlots, saveSlot } from "@/lib/api";
-import type { PlatformInstance, TreeFile, TreeSlot, TreeSlotSummary } from "@/lib/types";
+import { updateNodeById } from "@/lib/treeUtils";
+import type { PlatformInstance, TreeFile, TreeNode, TreeSlot, TreeSlotSummary } from "@/lib/types";
 
 import styles from "./page.module.css";
 
@@ -25,6 +26,7 @@ export default function Home() {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [actionPending, setActionPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
 
   const activePlatform =
     activeTree.platforms.find((p) => p.id === viewedPlatformId) ?? activeTree.platforms[0];
@@ -133,6 +135,20 @@ export default function Home() {
     setViewedPlatformId(newPlatform.id);
   };
 
+  const handleNodeUpdate = (currentId: string, patch: Partial<TreeNode>) => {
+    setActiveTree((prev) => ({
+      ...prev,
+      platforms: prev.platforms.map((p) =>
+        p.id === viewedPlatformId
+          ? { ...p, root: updateNodeById(p.root, currentId, (node) => ({ ...node, ...patch })) }
+          : p,
+      ),
+    }));
+    if (patch.id && patch.id !== currentId) {
+      setSelectedNodeId(patch.id);
+    }
+  };
+
   const handleDeletePlatform = (id: string) => {
     if (activeTree.platforms.length <= 1) return;
     const platforms = activeTree.platforms.filter((p) => p.id !== id);
@@ -177,7 +193,12 @@ export default function Home() {
           onResetSample={handleResetSample}
           onUploadTree={handleUploadTree}
         />
-        <MindmapCanvas root={activePlatform.root} />
+        <MindmapCanvas
+          root={activePlatform.root}
+          selectedNodeId={selectedNodeId}
+          onSelectNode={setSelectedNodeId}
+          onNodeUpdate={handleNodeUpdate}
+        />
       </div>
       {modalMode && (
         <SlotPickerModal
