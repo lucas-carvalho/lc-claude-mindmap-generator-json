@@ -65,6 +65,12 @@ export default function Home() {
     }
   };
 
+  const handleUploadTree = (tree: TreeFile) => {
+    setError(null);
+    setActiveTree(tree);
+    setActiveSlot(null);
+  };
+
   const handleDeleteSlot = async (slot: TreeSlot) => {
     try {
       await deleteSlotRequest(slot);
@@ -87,6 +93,7 @@ export default function Home() {
             onOpenSave={() => openModal("save")}
             onOpenLoad={() => openModal("load")}
             onResetSample={handleResetSample}
+            onUploadTree={handleUploadTree}
           />
         </div>
       </header>
