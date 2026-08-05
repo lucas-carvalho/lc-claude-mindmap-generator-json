@@ -9,8 +9,9 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@dagrejs/dagre": "^3.1.0",
     "@xyflow/react": "^12.11.2",
+    "d3-hierarchy": "^3.1.2",
+    "lucide-react": "^1.28.0",
     "next": "16.3.0",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -18,7 +19,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/dagre": "^0.7.54",
+    "@types/d3-hierarchy": "^3.1.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
