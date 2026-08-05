@@ -74,12 +74,21 @@ const sampleRoot: TreeNode = node(
   ],
 );
 
+const DEFAULT_PLATFORM_ID = "sample-platform-default";
+
 export const sampleTree: TreeFile = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   id: "sample-tree",
   name: "Sample Regression Suite",
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
-  root: sampleRoot,
-  snapshots: [],
+  platforms: [
+    {
+      id: DEFAULT_PLATFORM_ID,
+      name: "Default",
+      root: sampleRoot,
+      snapshots: [],
+    },
+  ],
+  activePlatformId: DEFAULT_PLATFORM_ID,
 };
