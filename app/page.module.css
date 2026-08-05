@@ -32,11 +32,3 @@
   min-height: 0;
   position: relative;
 }
-
-.canvasPlaceholder {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: color-mix(in srgb, currentColor 45%, transparent);
-}

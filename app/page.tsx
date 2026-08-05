@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { MindmapCanvas } from "@/components/MindmapCanvas";
 import { sampleTree } from "@/data/sampleTree";
 import type { TreeFile, TreeSlot } from "@/lib/types";
 
@@ -20,7 +21,7 @@ export default function Home() {
         </span>
       </header>
       <div className={styles.canvasArea}>
-        <div className={styles.canvasPlaceholder}>Mindmap canvas coming up next.</div>
+        <MindmapCanvas root={activeTree.root} />
       </div>
     </div>
   );
