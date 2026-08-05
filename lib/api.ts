@@ -1,5 +1,11 @@
 import type { TreeFile, TreeNode, TreeSlot, TreeSlotSummary } from "./types";
 
+export interface PlatformSaveInput {
+  id: string;
+  name: string;
+  root: TreeNode;
+}
+
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {
   const body = await response.json().catch(() => null);
   if (!response.ok) {
@@ -25,7 +31,7 @@ export async function fetchSlot(slot: TreeSlot): Promise<TreeFile> {
 
 export async function saveSlot(
   slot: TreeSlot,
-  input: { name: string; root: TreeNode },
+  input: { name: string; activePlatformId: string; platforms: PlatformSaveInput[] },
 ): Promise<TreeFile> {
   const res = await fetch(`/api/trees/${slot}`, {
     method: "PUT",
