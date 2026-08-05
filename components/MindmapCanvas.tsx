@@ -7,7 +7,8 @@ import "@xyflow/react/dist/style.css";
 
 import { layoutTree } from "@/lib/treeLayout";
 import type { TreeNode } from "@/lib/types";
-import { findNodeById, TREE_NODE_TYPE } from "@/lib/treeUtils";
+import { findNodeById, getShapeSignature, TREE_NODE_TYPE } from "@/lib/treeUtils";
+import type { FlowNode } from "@/lib/treeUtils";
 
 import { NodeDetailPanel } from "./NodeDetailPanel";
 import { TreeNodeCard } from "./TreeNodeCard";
@@ -17,27 +18,45 @@ const nodeTypes = { [TREE_NODE_TYPE]: TreeNodeCard };
 
 interface MindmapCanvasProps {
   root: TreeNode;
+  selectedNodeId: string | null;
+  onSelectNode: (id: string | null) => void;
+  onNodeUpdate: (currentId: string, patch: Partial<TreeNode>) => void;
 }
 
-export function MindmapCanvas({ root }: MindmapCanvasProps) {
+export function MindmapCanvas({ root, selectedNodeId, onSelectNode, onNodeUpdate }: MindmapCanvasProps) {
   const layout = useMemo(() => layoutTree(root), [root]);
+  const shapeSignature = useMemo(() => getShapeSignature(root), [root]);
   const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layout.edges);
-  const [selectedNode, setSelectedNode] = useState<TreeNode | null>(null);
 
-  // Reset the rendered layout when a different tree is loaded (new `root`
-  // identity), following React's "adjust state during render" pattern —
-  // deliberately not a useEffect, to avoid the extra render pass.
-  const [layoutForRoot, setLayoutForRoot] = useState(layout);
-  if (layoutForRoot !== layout) {
-    setLayoutForRoot(layout);
-    setNodes(layout.nodes);
-    setEdges(layout.edges);
-    setSelectedNode(null);
+  // Distinguish a structural change (nodes added/removed, or a genuinely
+  // different tree loaded) from a content-only edit (label/status/notes on
+  // an existing node): the former recomputes positions from the algorithm
+  // as before; the latter only patches each node's `data`, leaving current
+  // positions (including any manual drag) untouched. Render-time adjustment
+  // pattern, not a useEffect, matching the rest of this codebase.
+  const [lastRoot, setLastRoot] = useState(root);
+  const [lastShapeSignature, setLastShapeSignature] = useState(shapeSignature);
+  if (root !== lastRoot) {
+    setLastRoot(root);
+    setLastShapeSignature(shapeSignature);
+    if (shapeSignature !== lastShapeSignature) {
+      setNodes(layout.nodes);
+      setEdges(layout.edges);
+    } else {
+      setNodes((current) =>
+        current.map((node) => {
+          const updated = layout.nodes.find((ln) => ln.id === node.id);
+          return updated ? { ...node, data: updated.data } : node;
+        }),
+      );
+    }
   }
 
+  const selectedNode = selectedNodeId ? findNodeById(root, selectedNodeId) : null;
+
   const handleNodeClick: NodeMouseHandler = (_event, node) => {
-    setSelectedNode(findNodeById(root, node.id));
+    onSelectNode(node.id);
   };
 
   return (
@@ -50,15 +69,28 @@ export function MindmapCanvas({ root }: MindmapCanvasProps) {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onNodeClick={handleNodeClick}
-        onPaneClick={() => setSelectedNode(null)}
-        nodesDraggable={false}
+        onPaneClick={() => onSelectNode(null)}
         fitView
       >
         <Background />
-        <Controls position="bottom-right" showInteractive={false} />
-        <MiniMap position="bottom-left" pannable zoomable />
+        <Controls position="bottom-right" showInteractive={false} style={{ bottom: 150 }} />
+        <MiniMap
+          position="bottom-right"
+          style={{ width: 160, height: 120 }}
+          bgColor="var(--background)"
+          maskColor="rgba(0, 0, 0, 0.55)"
+          nodeColor={(node: FlowNode) => node.data.branchColor}
+          nodeStrokeColor={(node: FlowNode) => node.data.branchColor}
+          pannable
+          zoomable
+        />
       </ReactFlow>
-      <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
+      <NodeDetailPanel
+        node={selectedNode}
+        root={root}
+        onUpdate={onNodeUpdate}
+        onClose={() => onSelectNode(null)}
+      />
     </div>
   );
 }
