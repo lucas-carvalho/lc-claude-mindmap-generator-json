@@ -22,6 +22,12 @@
   font-weight: 600;
 }
 
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .slotBadge {
   font-size: 13px;
   color: color-mix(in srgb, currentColor 55%, transparent);

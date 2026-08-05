@@ -6,6 +6,7 @@ import { MindmapCanvas } from "@/components/MindmapCanvas";
 import { PlatformTabsBar } from "@/components/PlatformTabsBar";
 import { SlotPickerModal } from "@/components/SlotPickerModal";
 import { SnapshotCompareModal } from "@/components/SnapshotCompareModal";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toolbar } from "@/components/Toolbar";
 import { sampleTree } from "@/data/sampleTree";
 import { deleteSlotRequest, fetchSlot, fetchSlots, saveSlot } from "@/lib/api";
@@ -165,9 +166,12 @@ export default function Home() {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>{activeTree.name}</h1>
-        <span className={styles.slotBadge}>
-          {activeSlot ? `Slot ${activeSlot}` : "Sample tree (not saved)"}
-        </span>
+        <div className={styles.headerRight}>
+          <span className={styles.slotBadge}>
+            {activeSlot ? `Slot ${activeSlot}` : "Sample tree (not saved)"}
+          </span>
+          <ThemeToggle />
+        </div>
       </header>
       <PlatformTabsBar
         platforms={activeTree.platforms}

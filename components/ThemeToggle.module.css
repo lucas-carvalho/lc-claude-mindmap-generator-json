@@ -1,0 +1,16 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  background: var(--background);
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.button:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
