@@ -167,6 +167,9 @@ export function MindmapCanvas({
           style={{ width: 160, height: 120 }}
           nodeColor={(node: FlowNode) => node.data.branchColor}
           nodeStrokeColor={(node: FlowNode) => node.data.branchColor}
+          maskColor="rgba(37, 99, 235, 0.15)"
+          maskStrokeColor="#2563eb"
+          maskStrokeWidth={2}
           pannable
           zoomable
         />
