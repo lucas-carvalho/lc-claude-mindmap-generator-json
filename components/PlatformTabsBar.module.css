@@ -1,0 +1,78 @@
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 24px;
+  border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  overflow-x: auto;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 6px 4px 10px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
+  background: var(--background);
+}
+
+.active {
+  border-color: #2563eb;
+  background: color-mix(in srgb, #2563eb 8%, var(--background));
+}
+
+.tabLabel {
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--foreground);
+  cursor: pointer;
+  padding: 0;
+}
+
+.renameInput {
+  width: 120px;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  color: var(--foreground);
+  outline: none;
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  cursor: pointer;
+  border-radius: 999px;
+}
+
+.iconButton:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.duplicateButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+}
+
+.duplicateButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
