@@ -1,7 +1,9 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useState } from "react";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { Pencil } from "lucide-react";
 
+import { LegendPanel } from "@/components/LegendPanel";
 import { MindmapCanvas } from "@/components/MindmapCanvas";
 import { PlatformTabsBar } from "@/components/PlatformTabsBar";
 import { SlotPickerModal } from "@/components/SlotPickerModal";
@@ -23,12 +25,16 @@ export default function Home() {
   const [activeSlot, setActiveSlot] = useState<TreeSlot | null>(null);
   const [modalMode, setModalMode] = useState<ModalMode>(null);
   const [compareOpen, setCompareOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
   const [slots, setSlots] = useState<TreeSlotSummary[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [actionPending, setActionPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [renamingTree, setRenamingTree] = useState(false);
+  const [treeNameDraft, setTreeNameDraft] = useState("");
+  const exportRef = useRef<(() => void) | null>(null);
 
   useLayoutEffect(() => {
     // Re-derives from the same source the pre-hydration script in
@@ -82,6 +88,43 @@ export default function Home() {
   const handleResetSample = () => {
     applyTree(sampleTree);
     setActiveSlot(null);
+  };
+
+  const handleNewTree = () => {
+    const now = new Date().toISOString();
+    const platformId = crypto.randomUUID();
+    const newTree: TreeFile = {
+      schemaVersion: 2,
+      id: crypto.randomUUID(),
+      name: "Untitled tree",
+      createdAt: now,
+      updatedAt: now,
+      platforms: [
+        {
+          id: platformId,
+          name: "Default",
+          root: { id: crypto.randomUUID(), label: "Untitled tree", children: [] },
+          snapshots: [],
+        },
+      ],
+      activePlatformId: platformId,
+    };
+    applyTree(newTree);
+    setActiveSlot(null);
+    setSelectedNodeId(null);
+  };
+
+  const startRenamingTree = () => {
+    setTreeNameDraft(activeTree.name);
+    setRenamingTree(true);
+  };
+
+  const commitTreeName = () => {
+    const trimmed = treeNameDraft.trim();
+    if (trimmed) {
+      setActiveTree((prev) => ({ ...prev, name: trimmed }));
+    }
+    setRenamingTree(false);
   };
 
   const handleLoadSlot = async (slot: TreeSlot) => {
@@ -161,19 +204,22 @@ export default function Home() {
     setViewedPlatformId(newPlatform.id);
   };
 
-  const handleNodeUpdate = (currentId: string, patch: Partial<TreeNode>) => {
-    setActiveTree((prev) => ({
-      ...prev,
-      platforms: prev.platforms.map((p) =>
-        p.id === viewedPlatformId
-          ? { ...p, root: updateNodeById(p.root, currentId, (node) => ({ ...node, ...patch })) }
-          : p,
-      ),
-    }));
-    if (patch.id && patch.id !== currentId) {
-      setSelectedNodeId(patch.id);
-    }
-  };
+  const handleNodeUpdate = useCallback(
+    (currentId: string, patch: Partial<TreeNode>) => {
+      setActiveTree((prev) => ({
+        ...prev,
+        platforms: prev.platforms.map((p) =>
+          p.id === viewedPlatformId
+            ? { ...p, root: updateNodeById(p.root, currentId, (node) => ({ ...node, ...patch })) }
+            : p,
+        ),
+      }));
+      if (patch.id && patch.id !== currentId) {
+        setSelectedNodeId(patch.id);
+      }
+    },
+    [viewedPlatformId],
+  );
 
   const handleDeletePlatform = (id: string) => {
     if (activeTree.platforms.length <= 1) return;
@@ -190,7 +236,24 @@ export default function Home() {
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1>{activeTree.name}</h1>
+        {renamingTree ? (
+          <input
+            autoFocus
+            className={styles.titleInput}
+            value={treeNameDraft}
+            onChange={(event) => setTreeNameDraft(event.target.value)}
+            onBlur={commitTreeName}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") commitTreeName();
+              if (event.key === "Escape") setRenamingTree(false);
+            }}
+          />
+        ) : (
+          <button type="button" className={styles.titleButton} onClick={startRenamingTree}>
+            <h1 className={styles.titleText}>{activeTree.name}</h1>
+            <Pencil size={14} />
+          </button>
+        )}
         <div className={styles.headerRight}>
           <span className={styles.slotBadge}>
             {activeSlot ? `Slot ${activeSlot}` : "Sample tree (not saved)"}
@@ -198,6 +261,9 @@ export default function Home() {
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
       </header>
+      <p className={styles.platformCaption}>
+        Platforms — independent copies of this tree (e.g. per device or OS)
+      </p>
       <PlatformTabsBar
         platforms={activeTree.platforms}
         viewedPlatformId={activePlatform.id}
@@ -221,14 +287,20 @@ export default function Home() {
           onOpenCompare={() => setCompareOpen(true)}
           onResetSample={handleResetSample}
           onUploadTree={handleUploadTree}
+          onNewTree={handleNewTree}
+          onToggleLegend={() => setLegendOpen((open) => !open)}
+          onExport={() => exportRef.current?.()}
         />
         <MindmapCanvas
           root={activePlatform.root}
+          treeName={activeTree.name}
           colorMode={theme}
           selectedNodeId={selectedNodeId}
           onSelectNode={setSelectedNodeId}
           onNodeUpdate={handleNodeUpdate}
+          exportRef={exportRef}
         />
+        <LegendPanel open={legendOpen} onClose={() => setLegendOpen(false)} />
       </div>
       {modalMode && (
         <SlotPickerModal

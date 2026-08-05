@@ -13,13 +13,47 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 16px 24px;
+  /* Extra right inset (beyond the usual 24px) so the idle dev-tools badge —
+     wherever Next actually renders it — sits beside rather than on top of
+     the theme toggle; see docs/PRODUCTIONIZING.md-adjacent note in the
+     v4 plan for why this can't be solved by reading the badge's position. */
+  padding: 16px 40px 16px 24px;
   border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
 }
 
-.header h1 {
+.titleButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 8px;
+}
+
+.titleButton:hover {
+  background: color-mix(in srgb, currentColor 6%, transparent);
+}
+
+.titleButton svg {
+  color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.titleText {
   font-size: 18px;
   font-weight: 600;
+}
+
+.titleInput {
+  font-size: 18px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: var(--background);
+  color: var(--foreground);
 }
 
 .headerRight {
@@ -32,6 +66,12 @@
   font-size: 13px;
   color: color-mix(in srgb, currentColor 55%, transparent);
   white-space: nowrap;
+}
+
+.platformCaption {
+  padding: 8px 24px 0;
+  font-size: 12px;
+  color: color-mix(in srgb, currentColor 45%, transparent);
 }
 
 .error {
