@@ -21,6 +21,7 @@ export default function Home() {
   const [compareOpen, setCompareOpen] = useState(false);
   const [slots, setSlots] = useState<TreeSlotSummary[]>([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
+  const [actionPending, setActionPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const refreshSlots = useCallback(async () => {
@@ -46,6 +47,7 @@ export default function Home() {
   };
 
   const handleLoadSlot = async (slot: TreeSlot) => {
+    setActionPending(true);
     try {
       const file = await fetchSlot(slot);
       setActiveTree(file);
@@ -53,10 +55,13 @@ export default function Home() {
       setModalMode(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load slot");
+    } finally {
+      setActionPending(false);
     }
   };
 
   const handleSaveSlot = async (slot: TreeSlot, name?: string) => {
+    setActionPending(true);
     try {
       const saved = await saveSlot(slot, { name: name ?? activeTree.name, root: activeTree.root });
       setActiveTree(saved);
@@ -64,6 +69,8 @@ export default function Home() {
       setModalMode(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save slot");
+    } finally {
+      setActionPending(false);
     }
   };
 
@@ -74,12 +81,15 @@ export default function Home() {
   };
 
   const handleDeleteSlot = async (slot: TreeSlot) => {
+    setActionPending(true);
     try {
       await deleteSlotRequest(slot);
       if (activeSlot === slot) setActiveSlot(null);
       await refreshSlots();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete slot");
+    } finally {
+      setActionPending(false);
     }
   };
 
@@ -100,7 +110,14 @@ export default function Home() {
           />
         </div>
       </header>
-      {error && <p className={styles.error}>{error}</p>}
+      {error && (
+        <p className={styles.error}>
+          {error}
+          <button type="button" className={styles.errorDismiss} onClick={() => setError(null)}>
+            Dismiss
+          </button>
+        </p>
+      )}
       <div className={styles.canvasArea}>
         <MindmapCanvas root={activeTree.root} />
       </div>
@@ -109,6 +126,7 @@ export default function Home() {
           mode={modalMode}
           slots={slots}
           loading={slotsLoading}
+          disabled={actionPending}
           defaultName={activeTree.name}
           onClose={() => setModalMode(null)}
           onSelectSlot={(slot, name) => {

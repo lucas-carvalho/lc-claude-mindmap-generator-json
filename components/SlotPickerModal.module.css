@@ -132,3 +132,8 @@
   color: #dc2626;
   cursor: pointer;
 }
+
+.deleteButton:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}

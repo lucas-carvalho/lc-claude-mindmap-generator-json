@@ -10,6 +10,7 @@ interface SlotPickerModalProps {
   mode: "load" | "save";
   slots: TreeSlotSummary[];
   loading: boolean;
+  disabled?: boolean;
   defaultName?: string;
   onClose: () => void;
   onSelectSlot: (slot: TreeSlot, name?: string) => void;
@@ -20,6 +21,7 @@ export function SlotPickerModal({
   mode,
   slots,
   loading,
+  disabled = false,
   defaultName,
   onClose,
   onSelectSlot,
@@ -52,56 +54,62 @@ export function SlotPickerModal({
         {loading ? (
           <p className={styles.hint}>Loading slots…</p>
         ) : (
-          <ul className={styles.slotList}>
-            {slots.map((slot) => (
-              <li key={slot.slot} className={styles.slotRow}>
-                <div className={styles.slotInfo}>
-                  <span className={styles.slotNumber}>Slot {slot.slot}</span>
-                  {slot.occupied ? (
-                    <span className={styles.slotMeta}>
-                      {slot.name}
-                      {slot.updatedAt ? ` · updated ${new Date(slot.updatedAt).toLocaleString()}` : ""}
-                      {slot.snapshotCount
-                        ? ` · ${slot.snapshotCount} snapshot${slot.snapshotCount === 1 ? "" : "s"}`
-                        : ""}
-                    </span>
-                  ) : (
-                    <span className={styles.slotMeta}>Empty</span>
-                  )}
-                </div>
-                <div className={styles.slotActions}>
-                  {mode === "load" ? (
-                    <button
-                      type="button"
-                      className={styles.actionButton}
-                      disabled={!slot.occupied}
-                      onClick={() => onSelectSlot(slot.slot)}
-                    >
-                      Load
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className={styles.actionButton}
-                      disabled={!name.trim()}
-                      onClick={() => onSelectSlot(slot.slot, name.trim())}
-                    >
-                      {slot.occupied ? "Overwrite" : "Save"}
-                    </button>
-                  )}
-                  {slot.occupied && (
-                    <button
-                      type="button"
-                      className={styles.deleteButton}
-                      onClick={() => onDeleteSlot(slot.slot)}
-                    >
-                      Delete
-                    </button>
-                  )}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <>
+            {mode === "load" && slots.length > 0 && slots.every((slot) => !slot.occupied) && (
+              <p className={styles.hint}>No trees saved yet — save one from the toolbar first.</p>
+            )}
+            <ul className={styles.slotList}>
+              {slots.map((slot) => (
+                <li key={slot.slot} className={styles.slotRow}>
+                  <div className={styles.slotInfo}>
+                    <span className={styles.slotNumber}>Slot {slot.slot}</span>
+                    {slot.occupied ? (
+                      <span className={styles.slotMeta}>
+                        {slot.name}
+                        {slot.updatedAt ? ` · updated ${new Date(slot.updatedAt).toLocaleString()}` : ""}
+                        {slot.snapshotCount
+                          ? ` · ${slot.snapshotCount} snapshot${slot.snapshotCount === 1 ? "" : "s"}`
+                          : ""}
+                      </span>
+                    ) : (
+                      <span className={styles.slotMeta}>Empty</span>
+                    )}
+                  </div>
+                  <div className={styles.slotActions}>
+                    {mode === "load" ? (
+                      <button
+                        type="button"
+                        className={styles.actionButton}
+                        disabled={disabled || !slot.occupied}
+                        onClick={() => onSelectSlot(slot.slot)}
+                      >
+                        Load
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.actionButton}
+                        disabled={disabled || !name.trim()}
+                        onClick={() => onSelectSlot(slot.slot, name.trim())}
+                      >
+                        {slot.occupied ? "Overwrite" : "Save"}
+                      </button>
+                    )}
+                    {slot.occupied && (
+                      <button
+                        type="button"
+                        className={styles.deleteButton}
+                        disabled={disabled}
+                        onClick={() => onDeleteSlot(slot.slot)}
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </div>
     </div>

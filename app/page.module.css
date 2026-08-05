@@ -35,10 +35,25 @@
 }
 
 .error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   padding: 8px 24px;
   font-size: 13px;
   color: #dc2626;
   background: color-mix(in srgb, #dc2626 8%, transparent);
+}
+
+.errorDismiss {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: #dc2626;
+  cursor: pointer;
+  text-decoration: underline;
 }
 
 .canvasArea {
