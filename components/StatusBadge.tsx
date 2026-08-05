@@ -8,8 +8,17 @@ export const STATUS_META: Record<string, { color: string; label: string }> = {
   "not-run": { color: "#6b7280", label: "Not run" },
 };
 
-export function StatusBadge({ status }: { status?: string }) {
-  if (!status) return null;
+interface StatusBadgeProps {
+  status?: string;
+  /** Shown instead of rendering nothing when there's no status yet. */
+  placeholder?: string;
+}
+
+export function StatusBadge({ status, placeholder }: StatusBadgeProps) {
+  if (!status) {
+    if (!placeholder) return null;
+    return <span className={styles.placeholder}>{placeholder}</span>;
+  }
   const meta = STATUS_META[status] ?? { color: "#6b7280", label: status };
 
   return (
