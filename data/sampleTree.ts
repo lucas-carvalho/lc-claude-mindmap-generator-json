@@ -7,8 +7,8 @@ function node(partial: Omit<TreeNode, "children">, children: TreeNode[] = []): T
 const sampleRoot: TreeNode = node(
   { id: "root", label: "Sample Regression Suite", type: "suite" },
   [
-    node({ id: "feature-auth", label: "Authentication", type: "feature" }, [
-      node({ id: "scenario-login", label: "Login", type: "scenario" }, [
+    node({ id: "feature-auth", label: "Authentication", type: "feature", status: "failed" }, [
+      node({ id: "scenario-login", label: "Login", type: "scenario", status: "failed" }, [
         node({
           id: "tc-login-valid",
           label: "Valid credentials sign in",
