@@ -25,6 +25,7 @@ export function LegendPanel({ open, onClose }: LegendPanelProps) {
           <li>Each branch gets its own color purely to group it visually — the color itself has no meaning.</li>
           <li>Curved lines connect a node to its children.</li>
           <li>Drag any node to rearrange it; the layout only resets when the tree&apos;s actual shape changes.</li>
+          <li>Metadata is a free-form set of key/value pairs on a node for anything the built-in fields don&apos;t cover (e.g. a ticket link or environment name).</li>
         </ul>
       </section>
 

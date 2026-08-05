@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toolbar } from "@/components/Toolbar";
 import { sampleTree } from "@/data/sampleTree";
 import { deleteSlotRequest, fetchSlot, fetchSlots, saveSlot } from "@/lib/api";
-import { updateNodeById } from "@/lib/treeUtils";
+import { collectAllIds, generateChildId, updateNodeById } from "@/lib/treeUtils";
 import type { PlatformInstance, TreeFile, TreeNode, TreeSlot, TreeSlotSummary } from "@/lib/types";
 
 import styles from "./page.module.css";
@@ -221,6 +221,27 @@ export default function Home() {
     [viewedPlatformId],
   );
 
+  const handleAddChildNode = (parentId: string) => {
+    const existingIds = collectAllIds(activePlatform.root);
+    const newId = generateChildId(parentId, "New node", existingIds);
+    const newNode: TreeNode = { id: newId, label: "New node", children: [] };
+    setActiveTree((prev) => ({
+      ...prev,
+      platforms: prev.platforms.map((p) =>
+        p.id === viewedPlatformId
+          ? {
+              ...p,
+              root: updateNodeById(p.root, parentId, (node) => ({
+                ...node,
+                children: [...node.children, newNode],
+              })),
+            }
+          : p,
+      ),
+    }));
+    setSelectedNodeId(newId);
+  };
+
   const handleDeletePlatform = (id: string) => {
     if (activeTree.platforms.length <= 1) return;
     const platforms = activeTree.platforms.filter((p) => p.id !== id);
@@ -298,6 +319,7 @@ export default function Home() {
           selectedNodeId={selectedNodeId}
           onSelectNode={setSelectedNodeId}
           onNodeUpdate={handleNodeUpdate}
+          onAddChild={handleAddChildNode}
           exportRef={exportRef}
         />
         <LegendPanel open={legendOpen} onClose={() => setLegendOpen(false)} />
