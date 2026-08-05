@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { Upload } from "lucide-react";
 
 import { TreeFileSchema } from "@/lib/schema";
 import type { TreeFile } from "@/lib/types";
@@ -45,6 +46,7 @@ export function UploadDialog({ onLoad }: UploadDialogProps) {
         onChange={(event) => void handleFileChange(event)}
       />
       <button type="button" className={styles.button} onClick={() => inputRef.current?.click()}>
+        <Upload size={14} />
         Upload
       </button>
       {error && <span className={styles.error}>{error}</span>}

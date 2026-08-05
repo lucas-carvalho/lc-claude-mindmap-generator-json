@@ -9,18 +9,21 @@
 }
 
 .button {
-  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
-  background: var(--background);
+  border-radius: 999px;
+  border: none;
+  background: transparent;
   color: var(--foreground);
   cursor: pointer;
 }
 
 .button:hover {
-  background: color-mix(in srgb, currentColor 6%, transparent);
+  background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
 .error {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Background, Controls, ReactFlow, useEdgesState, useNodesState } from "@xyflow/react";
+import { Background, Controls, MiniMap, ReactFlow, useEdgesState, useNodesState } from "@xyflow/react";
 import type { NodeMouseHandler } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 
@@ -55,7 +55,8 @@ export function MindmapCanvas({ root }: MindmapCanvasProps) {
         fitView
       >
         <Background />
-        <Controls />
+        <Controls position="bottom-right" showInteractive={false} />
+        <MiniMap position="bottom-left" pannable zoomable />
       </ReactFlow>
       <NodeDetailPanel node={selectedNode} onClose={() => setSelectedNode(null)} />
     </div>

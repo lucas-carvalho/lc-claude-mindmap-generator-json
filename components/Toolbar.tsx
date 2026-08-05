@@ -1,5 +1,7 @@
 "use client";
 
+import { FolderOpen, GitCompare, RotateCcw, Save } from "lucide-react";
+
 import type { TreeFile } from "@/lib/types";
 
 import { UploadDialog } from "./UploadDialog";
@@ -23,17 +25,21 @@ export function Toolbar({
   return (
     <div className={styles.toolbar}>
       <button type="button" className={styles.button} onClick={onOpenLoad}>
+        <FolderOpen size={14} />
         Load
       </button>
       <button type="button" className={styles.button} onClick={onOpenSave}>
+        <Save size={14} />
         Save
       </button>
       <button type="button" className={styles.button} onClick={onOpenCompare}>
-        Compare versions
+        <GitCompare size={14} />
+        Compare
       </button>
       <UploadDialog onLoad={onUploadTree} />
       <button type="button" className={styles.button} onClick={onResetSample}>
-        Reset to sample
+        <RotateCcw size={14} />
+        Reset
       </button>
     </div>
   );

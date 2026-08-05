@@ -149,18 +149,9 @@ export default function Home() {
     <div className={styles.page}>
       <header className={styles.header}>
         <h1>{activeTree.name}</h1>
-        <div className={styles.headerRight}>
-          <span className={styles.slotBadge}>
-            {activeSlot ? `Slot ${activeSlot}` : "Sample tree (not saved)"}
-          </span>
-          <Toolbar
-            onOpenSave={() => openModal("save")}
-            onOpenLoad={() => openModal("load")}
-            onOpenCompare={() => setCompareOpen(true)}
-            onResetSample={handleResetSample}
-            onUploadTree={handleUploadTree}
-          />
-        </div>
+        <span className={styles.slotBadge}>
+          {activeSlot ? `Slot ${activeSlot}` : "Sample tree (not saved)"}
+        </span>
       </header>
       <PlatformTabsBar
         platforms={activeTree.platforms}
@@ -179,6 +170,13 @@ export default function Home() {
         </p>
       )}
       <div className={styles.canvasArea}>
+        <Toolbar
+          onOpenSave={() => openModal("save")}
+          onOpenLoad={() => openModal("load")}
+          onOpenCompare={() => setCompareOpen(true)}
+          onResetSample={handleResetSample}
+          onUploadTree={handleUploadTree}
+        />
         <MindmapCanvas root={activePlatform.root} />
       </div>
       {modalMode && (
