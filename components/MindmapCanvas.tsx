@@ -18,12 +18,19 @@ const nodeTypes = { [TREE_NODE_TYPE]: TreeNodeCard };
 
 interface MindmapCanvasProps {
   root: TreeNode;
+  colorMode: "light" | "dark";
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
   onNodeUpdate: (currentId: string, patch: Partial<TreeNode>) => void;
 }
 
-export function MindmapCanvas({ root, selectedNodeId, onSelectNode, onNodeUpdate }: MindmapCanvasProps) {
+export function MindmapCanvas({
+  root,
+  colorMode,
+  selectedNodeId,
+  onSelectNode,
+  onNodeUpdate,
+}: MindmapCanvasProps) {
   const layout = useMemo(() => layoutTree(root), [root]);
   const shapeSignature = useMemo(() => getShapeSignature(root), [root]);
   const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
@@ -63,6 +70,7 @@ export function MindmapCanvas({ root, selectedNodeId, onSelectNode, onNodeUpdate
     <div className={styles.wrapper}>
       <ReactFlow
         style={{ width: "100%", height: "100%" }}
+        colorMode={colorMode}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
@@ -77,8 +85,6 @@ export function MindmapCanvas({ root, selectedNodeId, onSelectNode, onNodeUpdate
         <MiniMap
           position="bottom-right"
           style={{ width: 160, height: 120 }}
-          bgColor="var(--background)"
-          maskColor="rgba(0, 0, 0, 0.55)"
           nodeColor={(node: FlowNode) => node.data.branchColor}
           nodeStrokeColor={(node: FlowNode) => node.data.branchColor}
           pannable

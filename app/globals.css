@@ -42,32 +42,17 @@ a {
   text-decoration: none;
 }
 
-/* React Flow ships light-only default colors for its Controls panel —
-   without this it's nearly invisible against a dark theme. */
+/* React Flow's own `colorMode` prop (set from MindmapCanvas) drives correct
+   button/background colors for both themes via its built-in CSS variables —
+   these rules are purely structural/visual polish, no colors overridden
+   here, so they never fight the library's own theming. */
 .react-flow__controls {
-  background: var(--background);
-  border: 1px solid color-mix(in srgb, currentColor 15%, transparent);
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-.react-flow__controls-button {
-  background: var(--background);
-  border-bottom: 1px solid color-mix(in srgb, currentColor 10%, transparent);
-  color: var(--foreground);
-}
-
-.react-flow__controls-button:hover {
-  background: color-mix(in srgb, currentColor 8%, transparent);
-}
-
-.react-flow__controls-button svg {
-  fill: var(--foreground);
 }
 
 .react-flow__minimap {
   border-radius: 10px;
   overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(128, 128, 128, 0.45);
 }

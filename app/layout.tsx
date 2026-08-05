@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Script from "next/script";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,13 +19,25 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable}`}>
-      <body>
-        <Script id="theme-init" strategy="beforeInteractive">
-          {`(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.dataset.theme=t;}catch(e){}})();`}
-        </Script>
-        {children}
-      </body>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable}`}
+      data-theme="light"
+      suppressHydrationWarning
+    >
+      <head>
+        <script
+          // Runs during HTML parsing, before hydration, so the correct
+          // theme is applied before first paint. `suppressHydrationWarning`
+          // on <html> tells React to accept the DOM's data-theme value
+          // (set here) instead of flagging it against the "light" default
+          // baked into this component's own JSX/SSR output.
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("theme");if(t!=="light"&&t!=="dark"){t=matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light";}document.documentElement.setAttribute("data-theme",t);}catch(e){}})();`,
+          }}
+        />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

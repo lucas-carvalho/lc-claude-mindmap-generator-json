@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useLayoutEffect, useState } from "react";
 
 import { MindmapCanvas } from "@/components/MindmapCanvas";
 import { PlatformTabsBar } from "@/components/PlatformTabsBar";
@@ -28,6 +28,31 @@ export default function Home() {
   const [actionPending, setActionPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
+
+  useLayoutEffect(() => {
+    // Re-derives from the same source the pre-hydration script in
+    // layout.tsx reads, and re-applies the attribute — React's dev-mode
+    // Strict Mode remount clears attributes it doesn't manage from JSX,
+    // which would otherwise silently drop the script's work.
+    const stored = localStorage.getItem("theme");
+    const resolved: "light" | "dark" =
+      stored === "dark" || stored === "light"
+        ? stored
+        : matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+    document.documentElement.setAttribute("data-theme", resolved);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing from an external system (localStorage/matchMedia), not from props
+    setTheme(resolved);
+  }, []);
+
+  const toggleTheme = () => {
+    const next: "light" | "dark" = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  };
 
   const activePlatform =
     activeTree.platforms.find((p) => p.id === viewedPlatformId) ?? activeTree.platforms[0];
@@ -170,7 +195,7 @@ export default function Home() {
           <span className={styles.slotBadge}>
             {activeSlot ? `Slot ${activeSlot}` : "Sample tree (not saved)"}
           </span>
-          <ThemeToggle />
+          <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
       </header>
       <PlatformTabsBar
@@ -199,6 +224,7 @@ export default function Home() {
         />
         <MindmapCanvas
           root={activePlatform.root}
+          colorMode={theme}
           selectedNodeId={selectedNodeId}
           onSelectNode={setSelectedNodeId}
           onNodeUpdate={handleNodeUpdate}
