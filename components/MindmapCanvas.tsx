@@ -43,6 +43,7 @@ export function MindmapCanvas({ root }: MindmapCanvasProps) {
   return (
     <div className={styles.wrapper}>
       <ReactFlow
+        style={{ width: "100%", height: "100%" }}
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
