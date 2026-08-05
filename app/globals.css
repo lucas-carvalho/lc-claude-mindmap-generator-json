@@ -42,6 +42,21 @@ a {
   text-decoration: none;
 }
 
+/* `color` is inherited by default, but browser UA stylesheets set an
+   explicit `color: buttontext` (etc.) on bare form controls, which wins
+   over inheritance unless overridden — and `buttontext` itself resolves
+   against `color-scheme` above, so a button that never sets its own
+   color can silently flip between light- and dark-appropriate text
+   depending on the app's theme, independent of the actual background
+   it's sitting on (e.g. the root node's fixed-dark card). */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
 /* React Flow's own `colorMode` prop (set from MindmapCanvas) drives correct
    button/background colors for both themes via its built-in CSS variables —
    these rules are purely structural/visual polish, no colors overridden
