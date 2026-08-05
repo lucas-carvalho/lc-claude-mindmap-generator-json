@@ -22,10 +22,49 @@
   touch-action: none;
 }
 
+.eyebrow {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, currentColor 45%, transparent);
+  margin-bottom: 2px;
+}
+
 .title {
   font-size: 15px;
   font-weight: 600;
   line-height: 1.3;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.pinButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.pinButton:hover {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.pinButton[aria-pressed="true"] {
+  color: #2563eb;
+  background: color-mix(in srgb, #2563eb 12%, transparent);
 }
 
 .closeButton {
@@ -140,8 +179,30 @@
   cursor: pointer;
 }
 
-.childCount {
+.childRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 14px;
+}
+
+.childCount {
   font-size: 11px;
   color: color-mix(in srgb, currentColor 45%, transparent);
+}
+
+.addChildButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 500;
+  border-radius: 6px;
+  border: 1px dashed color-mix(in srgb, currentColor 25%, transparent);
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  flex-shrink: 0;
 }

@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { FilePlus, Pin, PinOff, Plus, Trash2 } from "lucide-react";
 
 import { collectAllIds } from "@/lib/treeUtils";
 import type { TreeNode } from "@/lib/types";
@@ -13,11 +13,22 @@ import styles from "./NodeDetailPanel.module.css";
 interface NodeDetailPanelProps {
   node: TreeNode | null;
   root: TreeNode;
+  pinned: boolean;
+  onTogglePinned: () => void;
   onUpdate: (currentId: string, patch: Partial<TreeNode>) => void;
+  onAddChild: (parentId: string) => void;
   onClose: () => void;
 }
 
-export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPanelProps) {
+export function NodeDetailPanel({
+  node,
+  root,
+  pinned,
+  onTogglePinned,
+  onUpdate,
+  onAddChild,
+  onClose,
+}: NodeDetailPanelProps) {
   const [lastNodeId, setLastNodeId] = useState<string | null>(node?.id ?? null);
   const [draftId, setDraftId] = useState(node?.id ?? "");
   const [draftLabel, setDraftLabel] = useState(node?.label ?? "");
@@ -133,16 +144,31 @@ export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPan
         onPointerUp={handleHeaderPointerUp}
         style={{ cursor: dragging ? "grabbing" : "grab" }}
       >
-        <h2 className={styles.title}>Edit node</h2>
-        <button
-          type="button"
-          className={styles.closeButton}
-          onClick={onClose}
-          aria-label="Close"
-          data-no-drag
-        >
-          ×
-        </button>
+        <div>
+          <span className={styles.eyebrow}>Drag to reposition</span>
+          <h2 className={styles.title}>Edit node</h2>
+        </div>
+        <div className={styles.headerActions} data-no-drag>
+          <button
+            type="button"
+            className={styles.pinButton}
+            onClick={onTogglePinned}
+            aria-label={pinned ? "Unpin panel" : "Pin panel open"}
+            aria-pressed={pinned}
+            data-no-drag
+          >
+            {pinned ? <PinOff size={14} /> : <Pin size={14} />}
+          </button>
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={onClose}
+            aria-label="Close"
+            data-no-drag
+          >
+            ×
+          </button>
+        </div>
       </div>
 
       <label className={styles.field}>
@@ -260,9 +286,15 @@ export function NodeDetailPanel({ node, root, onUpdate, onClose }: NodeDetailPan
         </button>
       </div>
 
-      <p className={styles.childCount}>
-        {node.children.length} child {node.children.length === 1 ? "node" : "nodes"}
-      </p>
+      <div className={styles.childRow}>
+        <p className={styles.childCount}>
+          {node.children.length} child {node.children.length === 1 ? "node" : "nodes"}
+        </p>
+        <button type="button" className={styles.addChildButton} onClick={() => onAddChild(node.id)}>
+          <FilePlus size={12} />
+          Add child node
+        </button>
+      </div>
     </aside>
   );
 }
