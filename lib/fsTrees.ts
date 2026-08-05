@@ -6,7 +6,13 @@ import path from "node:path";
 
 import { TreeFileSchema } from "./schema";
 import { MAX_SNAPSHOTS_PER_SLOT, TREE_SLOT_COUNT } from "./types";
-import type { TreeFile, TreeNode, TreeSlot, TreeSlotSummary } from "./types";
+import type { PlatformInstance, TreeFile, TreeNode, TreeSlot, TreeSlotSummary } from "./types";
+
+export interface PlatformSaveInput {
+  id: string;
+  name: string;
+  root: TreeNode;
+}
 
 const DATA_DIR = path.join(process.cwd(), "data", "trees");
 
@@ -63,7 +69,8 @@ export async function listSlots(): Promise<TreeSlotSummary[]> {
             occupied: true,
             name: file.name,
             updatedAt: file.updatedAt,
-            snapshotCount: file.snapshots.length,
+            platformCount: file.platforms.length,
+            snapshotCount: file.platforms.reduce((sum, p) => sum + p.snapshots.length, 0),
           }
         : { slot: slot as TreeSlot, occupied: false },
     );
@@ -73,29 +80,34 @@ export async function listSlots(): Promise<TreeSlotSummary[]> {
 
 export async function writeSlot(
   slot: number,
-  input: { name: string; root: TreeNode },
+  input: { name: string; activePlatformId: string; platforms: PlatformSaveInput[] },
 ): Promise<TreeFile> {
   assertValidSlot(slot);
   await ensureDataDir();
 
   const existing = await readSlot(slot);
   const now = new Date().toISOString();
+  const existingById = new Map((existing?.platforms ?? []).map((p) => [p.id, p]));
 
-  const snapshots = existing
-    ? [
-        { id: randomUUID(), capturedAt: existing.updatedAt, root: existing.root },
-        ...existing.snapshots,
-      ].slice(0, MAX_SNAPSHOTS_PER_SLOT)
-    : [];
+  const platforms: PlatformInstance[] = input.platforms.map((incoming) => {
+    const prior = existingById.get(incoming.id);
+    const snapshots = prior
+      ? [
+          { id: randomUUID(), capturedAt: existing!.updatedAt, root: prior.root },
+          ...prior.snapshots,
+        ].slice(0, MAX_SNAPSHOTS_PER_SLOT)
+      : [];
+    return { id: incoming.id, name: incoming.name, root: incoming.root, snapshots };
+  });
 
   const next: TreeFile = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     id: existing?.id ?? randomUUID(),
     name: input.name,
     createdAt: existing?.createdAt ?? now,
     updatedAt: now,
-    root: input.root,
-    snapshots,
+    platforms,
+    activePlatformId: input.activePlatformId,
   };
 
   const target = slotToFilename(slot);
