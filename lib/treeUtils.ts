@@ -153,3 +153,48 @@ export function findNodeById(root: TreeNode, id: string): TreeNode | null {
   }
   return null;
 }
+
+/**
+ * Immutably replaces the node matching `id` with `updater(node)`. Only
+ * objects on the path from root to the target are recreated — sibling
+ * branches keep their exact previous identity, so callers can tell a
+ * content-only edit apart from a structural change by reference equality.
+ */
+export function updateNodeById(
+  root: TreeNode,
+  id: string,
+  updater: (node: TreeNode) => TreeNode,
+): TreeNode {
+  if (root.id === id) return updater(root);
+
+  let changed = false;
+  const children = root.children.map((child) => {
+    const next = updateNodeById(child, id, updater);
+    if (next !== child) changed = true;
+    return next;
+  });
+
+  return changed ? { ...root, children } : root;
+}
+
+export function collectAllIds(root: TreeNode, acc: Set<string> = new Set()): Set<string> {
+  acc.add(root.id);
+  root.children.forEach((child) => collectAllIds(child, acc));
+  return acc;
+}
+
+/**
+ * An ordered join of every node id in the tree. Two trees with the same
+ * signature have identical shape (same nodes, same parent/child structure)
+ * even if unrelated content fields (label/status/notes/...) differ —
+ * used to tell "a node's properties changed" apart from "the tree's shape
+ * changed" (nodes added/removed, or a different tree entirely).
+ */
+export function getShapeSignature(root: TreeNode): string {
+  const ids: string[] = [];
+  (function walk(node: TreeNode) {
+    ids.push(node.id);
+    node.children.forEach(walk);
+  })(root);
+  return ids.join(",");
+}
