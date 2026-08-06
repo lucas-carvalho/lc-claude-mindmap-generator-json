@@ -4,6 +4,10 @@
   "private": true,
   "license": "MIT",
   "author": "Lucas Carvalho",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lucas-carvalho/lc-claude-mindmap-generator-json"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
