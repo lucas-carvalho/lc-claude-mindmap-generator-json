@@ -1,7 +1,7 @@
 import { hierarchy, tree as d3tree } from "d3-hierarchy";
 
 import type { TreeNode } from "./types";
-import { assignBranchSides, treeToFlowElements } from "./treeUtils";
+import { assignBranchSides, orphanToFlowElements, treeToFlowElements } from "./treeUtils";
 import type { FlowEdge, FlowNode } from "./treeUtils";
 
 export const NODE_WIDTH = 220;
@@ -56,14 +56,56 @@ function layoutSide(children: TreeNode[], side: 1 | -1): PositionedPoint[] {
     }));
 }
 
+const ORPHAN_MARGIN_TOP = 140;
+const ORPHAN_GAP = SIBLING_SPACING * 2;
+
+/**
+ * Each orphan subtree gets its own independent layout — reusing layoutSide
+ * as if the orphan's own root were a lone "right-side" branch — then all
+ * of them are stacked in a column below the main tree's own bounding box,
+ * so they're always visible but never overlap it or each other.
+ */
+function layoutOrphans(orphans: TreeNode[], startY: number): { nodes: FlowNode[]; edges: FlowEdge[] } {
+  const nodes: FlowNode[] = [];
+  const edges: FlowEdge[] = [];
+  let cursorY = startY;
+
+  orphans.forEach((orphanRoot) => {
+    const flow = orphanToFlowElements(orphanRoot);
+    const positioned = layoutSide([orphanRoot], 1);
+    const positionById = new Map(positioned.map((point) => [point.id, point]));
+    const ys = flow.nodes.map((node) => positionById.get(node.id)?.y ?? 0);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
+
+    flow.nodes.forEach((node) => {
+      const point = positionById.get(node.id) ?? { x: 0, y: 0 };
+      nodes.push({
+        ...node,
+        position: { x: point.x - NODE_WIDTH / 2, y: point.y - minY + cursorY },
+      });
+    });
+    edges.push(...flow.edges);
+
+    cursorY += maxY - minY + NODE_HEIGHT + ORPHAN_GAP;
+  });
+
+  return { nodes, edges };
+}
+
 /**
  * Positions are always recomputed from the tree's parent/child shape (never
  * read from stored x/y) — this deterministic pass is the "fixed template"
  * applied uniformly to whatever tree data is loaded. Root sits at the
  * center; each side is laid out independently via d3-hierarchy and mirrored
  * for the left side, producing the classic bidirectional mindmap shape.
+ * Detached orphan subtrees (see lib/treeUtils.ts) are laid out separately
+ * and stacked below the main tree, always visible but never connected to it.
  */
-export function layoutTree(root: TreeNode): { nodes: FlowNode[]; edges: FlowEdge[] } {
+export function layoutTree(
+  root: TreeNode,
+  orphans: TreeNode[] = [],
+): { nodes: FlowNode[]; edges: FlowEdge[] } {
   const { nodes, edges } = treeToFlowElements(root);
   const { left, right } = assignBranchSides(root.children);
 
@@ -74,14 +116,23 @@ export function layoutTree(root: TreeNode): { nodes: FlowNode[]; edges: FlowEdge
   ];
   const positionById = new Map(positioned.map((point) => [point.id, point]));
 
+  const mainNodes = nodes.map((node) => {
+    const point = positionById.get(node.id) ?? { x: 0, y: 0 };
+    return {
+      ...node,
+      position: { x: point.x - NODE_WIDTH / 2, y: point.y - NODE_HEIGHT / 2 },
+    };
+  });
+
+  if (orphans.length === 0) {
+    return { nodes: mainNodes, edges };
+  }
+
+  const maxMainY = Math.max(0, ...mainNodes.map((node) => node.position.y + NODE_HEIGHT));
+  const orphanLayout = layoutOrphans(orphans, maxMainY + ORPHAN_MARGIN_TOP);
+
   return {
-    nodes: nodes.map((node) => {
-      const point = positionById.get(node.id) ?? { x: 0, y: 0 };
-      return {
-        ...node,
-        position: { x: point.x - NODE_WIDTH / 2, y: point.y - NODE_HEIGHT / 2 },
-      };
-    }),
-    edges,
+    nodes: [...mainNodes, ...orphanLayout.nodes],
+    edges: [...edges, ...orphanLayout.edges],
   };
 }
