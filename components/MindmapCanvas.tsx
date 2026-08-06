@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   Controls,
@@ -85,42 +85,60 @@ function ExportHandle({ exportRef, colorMode, treeName }: ExportHandleProps) {
 
 interface MindmapCanvasProps {
   root: TreeNode;
+  orphans: TreeNode[];
   treeName: string;
   colorMode: "light" | "dark";
   selectedNodeId: string | null;
   onSelectNode: (id: string | null) => void;
   onNodeUpdate: (currentId: string, patch: Partial<TreeNode>) => void;
   onAddChild: (parentId: string) => void;
+  onRequestDeleteNode: (id: string) => void;
   exportRef: React.RefObject<(() => void) | null>;
 }
 
 export function MindmapCanvas({
   root,
+  orphans,
   treeName,
   colorMode,
   selectedNodeId,
   onSelectNode,
   onNodeUpdate,
   onAddChild,
+  onRequestDeleteNode,
   exportRef,
 }: MindmapCanvasProps) {
-  const layout = useMemo(() => layoutTree(root), [root]);
-  const shapeSignature = useMemo(() => getShapeSignature(root), [root]);
+  const layout = useMemo(() => layoutTree(root, orphans), [root, orphans]);
+  const shapeSignature = useMemo(
+    () => `${getShapeSignature(root)}|${orphans.map(getShapeSignature).join(",")}`,
+    [root, orphans],
+  );
   const [nodes, setNodes, onNodesChange] = useNodesState(layout.nodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(layout.edges);
   const [pinned, setPinned] = useState(false);
+
+  // React Flow warns (error#002) whenever the per-key component inside
+  // nodeTypes changes reference between renders. Routing onNodeUpdate
+  // through a ref — instead of the memo's dependency array — means
+  // nodeTypes is built exactly once and never again, while the wrapped
+  // callbacks still always call the latest onNodeUpdate. The ref is synced
+  // in an effect (not during render) per the rules-of-hooks lint rule.
+  const onNodeUpdateRef = useRef(onNodeUpdate);
+  useEffect(() => {
+    onNodeUpdateRef.current = onNodeUpdate;
+  });
 
   const nodeTypes = useMemo(
     () => ({
       [TREE_NODE_TYPE]: (props: NodeProps<FlowNode>) => (
         <TreeNodeCard
           {...props}
-          onStatusChange={(status) => onNodeUpdate(props.id, { status })}
-          onAssigneeChange={(assignee) => onNodeUpdate(props.id, { assignee })}
+          onStatusChange={(status) => onNodeUpdateRef.current(props.id, { status })}
+          onAssigneeChange={(assignee) => onNodeUpdateRef.current(props.id, { assignee })}
         />
       ),
     }),
-    [onNodeUpdate],
+    [],
   );
 
   // Distinguish a structural change (nodes added/removed, or a genuinely
@@ -130,9 +148,11 @@ export function MindmapCanvas({
   // positions (including any manual drag) untouched. Render-time adjustment
   // pattern, not a useEffect, matching the rest of this codebase.
   const [lastRoot, setLastRoot] = useState(root);
+  const [lastOrphans, setLastOrphans] = useState(orphans);
   const [lastShapeSignature, setLastShapeSignature] = useState(shapeSignature);
-  if (root !== lastRoot) {
+  if (root !== lastRoot || orphans !== lastOrphans) {
     setLastRoot(root);
+    setLastOrphans(orphans);
     setLastShapeSignature(shapeSignature);
     if (shapeSignature !== lastShapeSignature) {
       setNodes(layout.nodes);
@@ -147,7 +167,27 @@ export function MindmapCanvas({
     }
   }
 
-  const selectedNode = selectedNodeId ? findNodeById(root, selectedNodeId) : null;
+  const selectedNode = selectedNodeId
+    ? (findNodeById(root, selectedNodeId) ??
+      orphans.map((orphan) => findNodeById(orphan, selectedNodeId)).find((found) => found) ??
+      null)
+    : null;
+
+  // Keyboard delete: Delete/Backspace requests deleting the selected node,
+  // guarded against firing while typing in any form field (so editing Notes
+  // text isn't misread as "delete the node") and against the true root.
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!selectedNodeId || selectedNodeId === root.id) return;
+      if (event.key !== "Delete" && event.key !== "Backspace") return;
+      const target = event.target as HTMLElement;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName) || target.isContentEditable) return;
+      event.preventDefault();
+      onRequestDeleteNode(selectedNodeId);
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [selectedNodeId, root.id, onRequestDeleteNode]);
 
   const handleNodeClick: NodeMouseHandler = (_event, node) => {
     onSelectNode(node.id);
@@ -191,6 +231,7 @@ export function MindmapCanvas({
         onTogglePinned={() => setPinned((current) => !current)}
         onUpdate={onNodeUpdate}
         onAddChild={onAddChild}
+        onRequestDelete={onRequestDeleteNode}
         onClose={() => onSelectNode(null)}
       />
     </div>
