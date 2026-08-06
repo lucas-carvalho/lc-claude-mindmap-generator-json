@@ -29,7 +29,14 @@ export interface TreeNodeData extends Record<string, unknown> {
   metadata?: Record<string, string>;
   side: BranchSide;
   branchColor: string;
+  /** True for every node in a detached orphan subtree (see orphanToFlowElements) — no path back to the main root. */
+  disconnected?: boolean;
 }
+
+/** Neutral gray for orphan/"unlinked" subtrees — distinct from both the
+ * branch palette and the Status colors, so a floating cluster reads as
+ * "detached" rather than as a normal (if oddly colored) branch. */
+export const ORPHAN_COLOR = "#9ca3af";
 
 /** First letter of the first and last whitespace-separated word, uppercased. */
 export function getInitials(name: string): string {
@@ -77,15 +84,53 @@ function slugify(text: string): string {
   );
 }
 
+const TYPE_ID_PREFIXES: Record<string, string> = {
+  feature: "feature",
+  scenario: "scenario",
+  "test case": "tc",
+};
+
 /**
- * The new id always builds on the parent's id plus a slug of the label
- * ("inherits the parent's id logic, complemented by an objective
- * abstraction of the label"), deduped against every id already in the
- * tree. Only derived once at creation time — id stays a stable,
- * independently-editable field afterward, same as everywhere else.
+ * Strips a known type prefix ("feature-", "scenario-", "tc-") off an id,
+ * leaving its own distinguishing complement — e.g. "scenario-login" ->
+ * "login". Falls back to the id as-is for anything that doesn't match
+ * (the root, or a custom/uploaded tree not using this convention).
  */
-export function generateChildId(parentId: string, label: string, existingIds: Set<string>): string {
-  const base = `${parentId}-${slugify(label)}`;
+function stripKnownPrefix(id: string): string {
+  for (const prefix of Object.values(TYPE_ID_PREFIXES)) {
+    if (id === prefix) return "";
+    if (id.startsWith(`${prefix}-`)) return id.slice(prefix.length + 1);
+  }
+  return id;
+}
+
+/**
+ * Type-prefixed ids matching the bundled sample data's own convention
+ * (feature-auth, scenario-login, tc-login-valid, ...) rather than a
+ * chained parent-id prefix. Feature/Scenario ids reset fresh to
+ * `{prefix}-{slug(label)}`, ignoring the parent entirely (e.g.
+ * "scenario-login" doesn't reference its feature parent). Test case ids
+ * fold in the parent's own complement so sibling test cases across
+ * different scenarios don't collide on short labels — this also
+ * recurses naturally for test-case-under-test-case, since the immediate
+ * parent (itself already "tc-...") supplies its own complement. Deduped
+ * against every id already in the tree. Only derived once at creation
+ * time (or re-derived on a Label edit if the id still matches this
+ * scheme — see NodeDetailPanel's commitLabel) — id stays a stable,
+ * independently-editable field once manually customized.
+ */
+export function generateChildId(
+  parentId: string,
+  label: string,
+  childType: string,
+  existingIds: Set<string>,
+): string {
+  const prefix = TYPE_ID_PREFIXES[childType] ?? slugify(childType);
+  const labelSlug = slugify(label);
+  const base =
+    childType === "test case"
+      ? [prefix, stripKnownPrefix(parentId), labelSlug].filter(Boolean).join("-")
+      : `${prefix}-${labelSlug}`;
   if (!existingIds.has(base)) return base;
   let suffix = 2;
   while (existingIds.has(`${base}-${suffix}`)) suffix += 1;
@@ -199,10 +244,75 @@ export function treeToFlowElements(root: TreeNode): { nodes: FlowNode[]; edges: 
   return { nodes, edges };
 }
 
+/**
+ * A simpler sibling of visitBranch/treeToFlowElements for a single detached
+ * orphan subtree: no branch-color/side assignment (always the muted
+ * ORPHAN_COLOR, arbitrarily "right"-sided so the existing Handle rendering
+ * still applies) and no depth-based Type — every node is "unlinked",
+ * recursively, since none of them have a path back to the real root.
+ * Internal edges between nodes WITHIN the subtree are still drawn (dashed,
+ * in the orphan color) — only the (nonexistent) edge to a parent is absent,
+ * since that's the connection that was actually severed.
+ */
+function visitOrphanBranch(
+  node: TreeNode,
+  parentId: string,
+  isTopOfOrphan: boolean,
+  nodes: FlowNode[],
+  edges: FlowEdge[],
+): void {
+  nodes.push({
+    id: node.id,
+    type: TREE_NODE_TYPE,
+    position: { x: 0, y: 0 },
+    data: {
+      label: node.label,
+      type: "unlinked",
+      status: node.status,
+      notes: node.notes,
+      assignee: node.assignee,
+      metadata: node.metadata,
+      side: "right",
+      branchColor: ORPHAN_COLOR,
+      disconnected: true,
+    },
+  });
+
+  if (!isTopOfOrphan) {
+    edges.push({
+      id: `${parentId}->${node.id}`,
+      source: parentId,
+      target: node.id,
+      style: { stroke: ORPHAN_COLOR, strokeWidth: 2, strokeDasharray: "6 4" },
+    });
+  }
+
+  node.children.forEach((child) => visitOrphanBranch(child, node.id, false, nodes, edges));
+}
+
+export function orphanToFlowElements(orphanRoot: TreeNode): { nodes: FlowNode[]; edges: FlowEdge[] } {
+  const nodes: FlowNode[] = [];
+  const edges: FlowEdge[] = [];
+  visitOrphanBranch(orphanRoot, "", true, nodes, edges);
+  return { nodes, edges };
+}
+
 export function findNodeById(root: TreeNode, id: string): TreeNode | null {
   if (root.id === id) return root;
   for (const child of root.children) {
     const found = findNodeById(child, id);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** Returns the id of `id`'s parent within this tree, or null if `id` is
+ * the root itself or isn't found (e.g. it's an orphan, living outside
+ * this tree entirely). */
+export function findParentId(root: TreeNode, id: string): string | null {
+  for (const child of root.children) {
+    if (child.id === id) return root.id;
+    const found = findParentId(child, id);
     if (found) return found;
   }
   return null;
@@ -229,6 +339,38 @@ export function updateNodeById(
   });
 
   return changed ? { ...root, children } : root;
+}
+
+/**
+ * Removes the node matching `id` from the tree, returning both the updated
+ * tree and the removed node's own children — the caller promotes those to
+ * new top-level orphans, since they're not deleted along with their parent.
+ * Returns null if `id` isn't found among any descendant (e.g. it's the
+ * true root itself, which can't be removed this way).
+ */
+export function removeNodeById(
+  root: TreeNode,
+  id: string,
+): { tree: TreeNode; removedChildren: TreeNode[] } | null {
+  let removedChildren: TreeNode[] | null = null;
+
+  function walk(node: TreeNode): TreeNode {
+    const match = node.children.find((child) => child.id === id);
+    if (match) {
+      removedChildren = match.children;
+      return { ...node, children: node.children.filter((child) => child.id !== id) };
+    }
+    let changed = false;
+    const children = node.children.map((child) => {
+      const next = walk(child);
+      if (next !== child) changed = true;
+      return next;
+    });
+    return changed ? { ...node, children } : node;
+  }
+
+  const tree = walk(root);
+  return removedChildren ? { tree, removedChildren } : null;
 }
 
 export function collectAllIds(root: TreeNode, acc: Set<string> = new Set()): Set<string> {
