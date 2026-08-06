@@ -48,43 +48,62 @@ export function Toolbar({
 }: ToolbarProps) {
   return (
     <div className={styles.toolbar}>
-      <button type="button" className={styles.button} onClick={onUndo} disabled={undoDisabled}>
-        <Undo2 size={14} />
-        Undo
-      </button>
-      <button type="button" className={styles.button} onClick={onRedo} disabled={redoDisabled}>
-        <Redo2 size={14} />
-        Redo
-      </button>
-      <button type="button" className={styles.button} onClick={onOpenLoad}>
-        <FolderOpen size={14} />
-        Load
-      </button>
-      <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={onOpenSave}>
-        <Save size={14} />
-        Save
-      </button>
-      <button type="button" className={styles.button} onClick={onNewTree}>
-        <FilePlus size={14} />
-        New
-      </button>
-      <button type="button" className={styles.button} onClick={onOpenCompare}>
-        <GitCompare size={14} />
-        Compare
-      </button>
-      <UploadDialog onLoad={onUploadTree} />
-      <button type="button" className={styles.button} onClick={onExport}>
-        <Download size={14} />
-        Export
-      </button>
-      <button type="button" className={`${styles.button} ${styles.buttonDanger}`} onClick={onOpenReset}>
-        <RotateCcw size={14} />
-        Reset
-      </button>
-      <button type="button" className={styles.button} onClick={onToggleLegend}>
-        <BookOpen size={14} />
-        Legend
-      </button>
+      <div className={styles.group}>
+        <button type="button" className={styles.button} onClick={onUndo} disabled={undoDisabled}>
+          <Undo2 size={14} />
+          Undo
+        </button>
+        <button type="button" className={styles.button} onClick={onRedo} disabled={redoDisabled}>
+          <Redo2 size={14} />
+          Redo
+        </button>
+      </div>
+
+      <div className={styles.group}>
+        <button type="button" className={styles.button} onClick={onOpenLoad}>
+          <FolderOpen size={14} />
+          Load
+        </button>
+        <button
+          type="button"
+          className={`${styles.button} ${styles.buttonPrimary}`}
+          onClick={onOpenSave}
+        >
+          <Save size={14} />
+          Save
+        </button>
+        <button type="button" className={styles.button} onClick={onNewTree}>
+          <FilePlus size={14} />
+          New
+        </button>
+        <UploadDialog onLoad={onUploadTree} />
+      </div>
+
+      <div className={styles.group}>
+        <button type="button" className={styles.button} onClick={onOpenCompare}>
+          <GitCompare size={14} />
+          Compare
+        </button>
+        <button
+          type="button"
+          className={`${styles.button} ${styles.buttonDanger}`}
+          onClick={onOpenReset}
+        >
+          <RotateCcw size={14} />
+          Reset
+        </button>
+      </div>
+
+      <div className={styles.group}>
+        <button type="button" className={styles.button} onClick={onExport}>
+          <Download size={14} />
+          Export
+        </button>
+        <button type="button" className={styles.button} onClick={onToggleLegend}>
+          <BookOpen size={14} />
+          Legend
+        </button>
+      </div>
     </div>
   );
 }

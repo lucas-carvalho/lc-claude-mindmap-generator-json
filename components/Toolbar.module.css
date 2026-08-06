@@ -1,9 +1,20 @@
 .toolbar {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px;
-  border-radius: 999px;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Each logical cluster (History / File / Tree actions / View) is its own
+   small rounded group — flex-wrap breaks between groups, never mid-group,
+   so wrapping to a second line never looks like it's cutting through a
+   single giant pill (the bug a full border-radius: 999px caused here). */
+.group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 12px;
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
   background: var(--background);
 }
@@ -12,11 +23,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 12px;
+  padding: 6px 10px;
   font-size: 13px;
   font-weight: 500;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 8px;
+  border: none;
   background: transparent;
   color: var(--foreground);
   cursor: pointer;
@@ -36,7 +47,6 @@
 }
 
 .buttonPrimary {
-  border-color: #2563eb;
   color: #2563eb;
 }
 
@@ -45,7 +55,6 @@
 }
 
 .buttonDanger {
-  border-color: #dc2626;
   color: #dc2626;
 }
 
