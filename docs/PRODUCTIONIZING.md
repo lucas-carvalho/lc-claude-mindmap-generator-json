@@ -16,7 +16,8 @@ Today the app is a single-user local prototype:
 - Runs with `npm run dev` on one machine, with no deployment target.
 - Persists data as flat JSON files on the local filesystem (`data/trees/`),
   read and written by a handful of Next.js Route Handlers.
-- Has a fixed number of save slots (5) with no concept of "whose" slot it is.
+- Has a fixed number of save slots (5, each optionally holding up to 3
+  "platform" variants of the same tree) with no concept of "whose" slot it is.
 - Has no login, no accounts, and no network-level access control beyond
   whatever is already true of the machine it runs on.
 - Trusts its own filesystem completely — there is no separate audit trail,
@@ -74,8 +75,8 @@ concurrent writer, or a need for real durability guarantees:
 
 ## 6. Multi-user data isolation
 
-The "5 slots" model is deliberately simple for a single local user; it does
-not generalize to multiple users:
+The "5 slots, each with up to 3 platforms" model is deliberately simple for a
+single local user; it does not generalize to multiple users:
 
 - Every stored tree needs an owner (and, if teams are involved, a
   tenant/workspace scope), not just a slot number.
