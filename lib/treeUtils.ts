@@ -134,6 +134,7 @@ function visitBranch(
   side: "left" | "right",
   branchColor: string,
   isDirectRootChild: boolean,
+  depth: number,
   nodes: FlowNode[],
   edges: FlowEdge[],
 ): void {
@@ -143,7 +144,7 @@ function visitBranch(
     position: { x: 0, y: 0 },
     data: {
       label: node.label,
-      type: node.type,
+      type: getTypeLabelForDepth(depth),
       status: node.status,
       notes: node.notes,
       assignee: node.assignee,
@@ -162,7 +163,7 @@ function visitBranch(
   });
 
   node.children.forEach((child) =>
-    visitBranch(child, node.id, side, branchColor, false, nodes, edges),
+    visitBranch(child, node.id, side, branchColor, false, depth + 1, nodes, edges),
   );
 }
 
@@ -174,7 +175,7 @@ export function treeToFlowElements(root: TreeNode): { nodes: FlowNode[]; edges: 
       position: { x: 0, y: 0 },
       data: {
         label: root.label,
-        type: root.type,
+        type: getTypeLabelForDepth(0),
         status: root.status,
         notes: root.notes,
         assignee: root.assignee,
@@ -192,7 +193,7 @@ export function treeToFlowElements(root: TreeNode): { nodes: FlowNode[]; edges: 
   root.children.forEach((child, index) => {
     const side: "left" | "right" = rightIds.has(child.id) ? "right" : "left";
     const branchColor = BRANCH_PALETTE[index % BRANCH_PALETTE.length];
-    visitBranch(child, root.id, side, branchColor, true, nodes, edges);
+    visitBranch(child, root.id, side, branchColor, true, 1, nodes, edges);
   });
 
   return { nodes, edges };
@@ -234,6 +235,28 @@ export function collectAllIds(root: TreeNode, acc: Set<string> = new Set()): Set
   acc.add(root.id);
   root.children.forEach((child) => collectAllIds(child, acc));
   return acc;
+}
+
+/** Depth of `id` from `root` (root itself is 0), or -1 if not found. */
+export function getNodeDepth(root: TreeNode, id: string, depth = 0): number {
+  if (root.id === id) return depth;
+  for (const child of root.children) {
+    const found = getNodeDepth(child, id, depth + 1);
+    if (found !== -1) return found;
+  }
+  return -1;
+}
+
+const DEPTH_TYPE_LABELS = ["suite", "feature", "scenario"] as const;
+
+/**
+ * Depths 0-2 map to the fixed suite/feature/scenario labels; anything
+ * deeper is always "test case", recursively, with no upper bound. Type is
+ * a computed function of tree position, not a stored/editable value — see
+ * NodeDetailPanel's locked Type field.
+ */
+export function getTypeLabelForDepth(depth: number): string {
+  return DEPTH_TYPE_LABELS[depth] ?? "test case";
 }
 
 /**

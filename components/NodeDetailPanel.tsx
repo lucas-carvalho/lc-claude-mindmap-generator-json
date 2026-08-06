@@ -2,9 +2,9 @@
 
 import { useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
-import { FilePlus, Pin, PinOff, Plus, Trash2 } from "lucide-react";
+import { FilePlus, Lock, Pin, PinOff, Plus, Trash2 } from "lucide-react";
 
-import { collectAllIds } from "@/lib/treeUtils";
+import { collectAllIds, getNodeDepth, getTypeLabelForDepth } from "@/lib/treeUtils";
 import type { TreeNode } from "@/lib/types";
 
 import { STATUS_META } from "./StatusBadge";
@@ -32,7 +32,6 @@ export function NodeDetailPanel({
   const [lastNodeId, setLastNodeId] = useState<string | null>(node?.id ?? null);
   const [draftId, setDraftId] = useState(node?.id ?? "");
   const [draftLabel, setDraftLabel] = useState(node?.label ?? "");
-  const [draftType, setDraftType] = useState(node?.type ?? "");
   const [draftNotes, setDraftNotes] = useState(node?.notes ?? "");
   const [draftAssignee, setDraftAssignee] = useState(node?.assignee ?? "");
   const [metadataRows, setMetadataRows] = useState<Array<[string, string]>>(
@@ -47,7 +46,6 @@ export function NodeDetailPanel({
     setLastNodeId(node.id);
     setDraftId(node.id);
     setDraftLabel(node.label);
-    setDraftType(node.type ?? "");
     setDraftNotes(node.notes ?? "");
     setDraftAssignee(node.assignee ?? "");
     setMetadataRows(Object.entries(node.metadata ?? {}));
@@ -96,10 +94,6 @@ export function NodeDetailPanel({
     else setDraftLabel(node.label);
   };
 
-  const commitType = () => {
-    onUpdate(node.id, { type: draftType.trim() || undefined });
-  };
-
   const commitNotes = () => {
     onUpdate(node.id, { notes: draftNotes.trim() || undefined });
   };
@@ -134,6 +128,8 @@ export function NodeDetailPanel({
     const metadata = Object.fromEntries(rows.filter(([key]) => key.trim()));
     onUpdate(node.id, { metadata: Object.keys(metadata).length > 0 ? metadata : undefined });
   };
+
+  const typeLabel = getTypeLabelForDepth(getNodeDepth(root, node.id));
 
   return (
     <aside className={styles.panel} style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}>
@@ -171,6 +167,16 @@ export function NodeDetailPanel({
         </div>
       </div>
 
+      <div className={styles.childRow}>
+        <p className={styles.childCount}>
+          {node.children.length} child {node.children.length === 1 ? "node" : "nodes"}
+        </p>
+        <button type="button" className={styles.addChildButton} onClick={() => onAddChild(node.id)}>
+          <FilePlus size={12} />
+          Add child node
+        </button>
+      </div>
+
       <label className={styles.field}>
         Label
         <input
@@ -182,13 +188,29 @@ export function NodeDetailPanel({
       </label>
 
       <label className={styles.field}>
-        Type
+        ID
         <input
           className={styles.input}
-          value={draftType}
-          onChange={(event) => setDraftType(event.target.value)}
-          onBlur={commitType}
+          value={draftId}
+          onChange={(event) => setDraftId(event.target.value)}
+          onBlur={commitId}
         />
+      </label>
+      {idError && <p className={styles.idError}>{idError}</p>}
+
+      <label className={styles.field}>
+        <span className={styles.lockedFieldLabel}>
+          Type
+          <span
+            className={styles.lockIcon}
+            title="Automatically set by this node's position in the tree — Feature, Scenario, or Test case (recursively, for anything under a Scenario)."
+          >
+            <Lock size={11} />
+          </span>
+        </span>
+        <select className={styles.input} value={typeLabel} disabled>
+          <option value={typeLabel}>{typeLabel}</option>
+        </select>
       </label>
 
       <label className={styles.field}>
@@ -229,19 +251,12 @@ export function NodeDetailPanel({
         />
       </label>
 
-      <label className={styles.field}>
-        ID
-        <input
-          className={styles.input}
-          value={draftId}
-          onChange={(event) => setDraftId(event.target.value)}
-          onBlur={commitId}
-        />
-      </label>
-      {idError && <p className={styles.idError}>{idError}</p>}
-
       <div className={styles.metadataSection}>
         <span className={styles.fieldLabel}>Metadata</span>
+        <p className={styles.metadataHint}>
+          Free-form key/value pairs for anything the fields above don&apos;t cover (e.g. a ticket link,
+          environment name, or build number).
+        </p>
         {metadataRows.map(([key, value], index) => (
           <div key={index} className={styles.metadataRow}>
             <input
@@ -283,16 +298,6 @@ export function NodeDetailPanel({
         >
           <Plus size={12} />
           Add field
-        </button>
-      </div>
-
-      <div className={styles.childRow}>
-        <p className={styles.childCount}>
-          {node.children.length} child {node.children.length === 1 ? "node" : "nodes"}
-        </p>
-        <button type="button" className={styles.addChildButton} onClick={() => onAddChild(node.id)}>
-          <FilePlus size={12} />
-          Add child node
         </button>
       </div>
     </aside>
