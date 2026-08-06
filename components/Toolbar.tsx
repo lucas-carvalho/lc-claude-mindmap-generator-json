@@ -1,6 +1,16 @@
 "use client";
 
-import { BookOpen, Download, FilePlus, FolderOpen, GitCompare, RotateCcw, Save } from "lucide-react";
+import {
+  BookOpen,
+  Download,
+  FilePlus,
+  FolderOpen,
+  GitCompare,
+  Redo2,
+  RotateCcw,
+  Save,
+  Undo2,
+} from "lucide-react";
 
 import type { TreeFile } from "@/lib/types";
 
@@ -16,6 +26,10 @@ interface ToolbarProps {
   onNewTree: () => void;
   onToggleLegend: () => void;
   onExport: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  undoDisabled: boolean;
+  redoDisabled: boolean;
 }
 
 export function Toolbar({
@@ -27,9 +41,21 @@ export function Toolbar({
   onNewTree,
   onToggleLegend,
   onExport,
+  onUndo,
+  onRedo,
+  undoDisabled,
+  redoDisabled,
 }: ToolbarProps) {
   return (
     <div className={styles.toolbar}>
+      <button type="button" className={styles.button} onClick={onUndo} disabled={undoDisabled}>
+        <Undo2 size={14} />
+        Undo
+      </button>
+      <button type="button" className={styles.button} onClick={onRedo} disabled={redoDisabled}>
+        <Redo2 size={14} />
+        Redo
+      </button>
       <button type="button" className={styles.button} onClick={onOpenLoad}>
         <FolderOpen size={14} />
         Load

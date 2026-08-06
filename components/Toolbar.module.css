@@ -26,6 +26,15 @@
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
+.button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.button:disabled:hover {
+  background: transparent;
+}
+
 .buttonPrimary {
   border-color: #2563eb;
   color: #2563eb;
