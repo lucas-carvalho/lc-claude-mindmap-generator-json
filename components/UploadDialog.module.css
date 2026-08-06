@@ -26,6 +26,24 @@
   background: color-mix(in srgb, currentColor 8%, transparent);
 }
 
+.helpButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+  cursor: pointer;
+}
+
+.helpButton:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
 .error {
   position: absolute;
   top: 100%;

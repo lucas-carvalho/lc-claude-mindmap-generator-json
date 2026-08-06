@@ -2,11 +2,12 @@
 
 import { useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { Upload } from "lucide-react";
+import { CircleHelp, Upload } from "lucide-react";
 
 import { TreeFileSchema } from "@/lib/schema";
 import type { TreeFile } from "@/lib/types";
 
+import { UploadGuideModal } from "./UploadGuideModal";
 import styles from "./UploadDialog.module.css";
 
 interface UploadDialogProps {
@@ -16,6 +17,7 @@ interface UploadDialogProps {
 export function UploadDialog({ onLoad }: UploadDialogProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   const handleFileChange = async (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -49,7 +51,17 @@ export function UploadDialog({ onLoad }: UploadDialogProps) {
         <Upload size={14} />
         Upload
       </button>
+      <button
+        type="button"
+        className={styles.helpButton}
+        onClick={() => setGuideOpen(true)}
+        aria-label="Upload format guide"
+        title="Upload format guide"
+      >
+        <CircleHelp size={14} />
+      </button>
       {error && <span className={styles.error}>{error}</span>}
+      {guideOpen && <UploadGuideModal onClose={() => setGuideOpen(false)} />}
     </span>
   );
 }
