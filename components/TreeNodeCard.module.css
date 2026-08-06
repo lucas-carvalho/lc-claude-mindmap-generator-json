@@ -2,10 +2,11 @@
   position: relative;
   min-width: 200px;
   max-width: 220px;
-  /* Extra top padding gives the corner-overlapping avatar (see
-     .avatarWrapper) room to sit above the header row without the two
-     ever visually touching. */
-  padding: 18px 12px 10px;
+  /* Top and bottom padding are equal so the content block stays
+     vertically centered in the card — the extra top clearance is for
+     the corner-overlapping avatar (see .avatarWrapper) to sit above the
+     header row without the two ever visually touching. */
+  padding: 18px 12px;
   border-radius: 14px;
   border: 2px solid transparent;
   background: var(--background);
