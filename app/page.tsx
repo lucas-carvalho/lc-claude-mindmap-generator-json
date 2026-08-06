@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { Pencil } from "lucide-react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { CheckCircle2, Pencil, TriangleAlert } from "lucide-react";
 
 import { LegendPanel } from "@/components/LegendPanel";
 import { MindmapCanvas } from "@/components/MindmapCanvas";
 import { PlatformTabsBar } from "@/components/PlatformTabsBar";
+import { ResetConfirmModal } from "@/components/ResetConfirmModal";
 import { SlotPickerModal } from "@/components/SlotPickerModal";
 import { SnapshotCompareModal } from "@/components/SnapshotCompareModal";
 import { ThemeToggle } from "@/components/ThemeToggle";
@@ -34,7 +35,19 @@ export default function Home() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [renamingTree, setRenamingTree] = useState(false);
   const [treeNameDraft, setTreeNameDraft] = useState("");
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const exportRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    if (!isDirty) return;
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
 
   useLayoutEffect(() => {
     // Re-derives from the same source the pre-hydration script in
@@ -66,6 +79,7 @@ export default function Home() {
   const applyTree = (tree: TreeFile) => {
     setActiveTree(tree);
     setViewedPlatformId(tree.activePlatformId);
+    setIsDirty(false);
   };
 
   const refreshSlots = useCallback(async () => {
@@ -85,9 +99,17 @@ export default function Home() {
     void refreshSlots();
   };
 
-  const handleResetSample = () => {
-    applyTree(sampleTree);
-    setActiveSlot(null);
+  const handleConfirmReset = () => {
+    setActiveTree((prev) => ({
+      ...prev,
+      platforms: prev.platforms.map((p) =>
+        p.id === viewedPlatformId
+          ? { ...p, root: structuredClone(sampleTree.platforms[0].root) }
+          : p,
+      ),
+    }));
+    setIsDirty(true);
+    setResetConfirmOpen(false);
   };
 
   const handleNewTree = () => {
@@ -121,8 +143,9 @@ export default function Home() {
 
   const commitTreeName = () => {
     const trimmed = treeNameDraft.trim();
-    if (trimmed) {
+    if (trimmed && trimmed !== activeTree.name) {
       setActiveTree((prev) => ({ ...prev, name: trimmed }));
+      setIsDirty(true);
     }
     setRenamingTree(false);
   };
@@ -155,6 +178,7 @@ export default function Home() {
       });
       applyTree(saved);
       setActiveSlot(slot);
+      setIsDirty(false);
       setModalMode(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save slot");
@@ -191,6 +215,7 @@ export default function Home() {
       ...prev,
       platforms: prev.platforms.map((p) => (p.id === id ? { ...p, name } : p)),
     }));
+    setIsDirty(true);
   };
 
   const handleDuplicatePlatform = () => {
@@ -202,6 +227,7 @@ export default function Home() {
     };
     setActiveTree((prev) => ({ ...prev, platforms: [...prev.platforms, newPlatform] }));
     setViewedPlatformId(newPlatform.id);
+    setIsDirty(true);
   };
 
   const handleNodeUpdate = useCallback(
@@ -217,6 +243,7 @@ export default function Home() {
       if (patch.id && patch.id !== currentId) {
         setSelectedNodeId(patch.id);
       }
+      setIsDirty(true);
     },
     [viewedPlatformId],
   );
@@ -240,6 +267,7 @@ export default function Home() {
       ),
     }));
     setSelectedNodeId(newId);
+    setIsDirty(true);
   };
 
   const handleDeletePlatform = (id: string) => {
@@ -252,6 +280,7 @@ export default function Home() {
       activePlatformId: prev.activePlatformId === id ? platforms[0].id : prev.activePlatformId,
     }));
     setViewedPlatformId(nextViewedId);
+    setIsDirty(true);
   };
 
   return (
@@ -275,10 +304,35 @@ export default function Home() {
             <Pencil size={14} />
           </button>
         )}
+        <div className={styles.headerToolbar}>
+          <Toolbar
+            onOpenSave={() => openModal("save")}
+            onOpenLoad={() => openModal("load")}
+            onOpenCompare={() => setCompareOpen(true)}
+            onOpenReset={() => setResetConfirmOpen(true)}
+            onUploadTree={handleUploadTree}
+            onNewTree={handleNewTree}
+            onToggleLegend={() => setLegendOpen((open) => !open)}
+            onExport={() => exportRef.current?.()}
+          />
+        </div>
         <div className={styles.headerRight}>
-          <span className={styles.slotBadge}>
-            {activeSlot ? `Slot ${activeSlot}` : "Sample tree (not saved)"}
-          </span>
+          {isDirty ? (
+            <span className={styles.unsavedBadge}>
+              <TriangleAlert size={12} />
+              Unsaved changes
+            </span>
+          ) : activeSlot ? (
+            <span className={styles.savedBadge}>
+              <CheckCircle2 size={12} />
+              Saved to Slot {activeSlot}
+            </span>
+          ) : (
+            <span className={styles.unsavedBadge}>
+              <TriangleAlert size={12} />
+              Sample tree — not saved
+            </span>
+          )}
           <ThemeToggle theme={theme} onToggle={toggleTheme} />
         </div>
       </header>
@@ -302,16 +356,6 @@ export default function Home() {
         </p>
       )}
       <div className={styles.canvasArea}>
-        <Toolbar
-          onOpenSave={() => openModal("save")}
-          onOpenLoad={() => openModal("load")}
-          onOpenCompare={() => setCompareOpen(true)}
-          onResetSample={handleResetSample}
-          onUploadTree={handleUploadTree}
-          onNewTree={handleNewTree}
-          onToggleLegend={() => setLegendOpen((open) => !open)}
-          onExport={() => exportRef.current?.()}
-        />
         <MindmapCanvas
           root={activePlatform.root}
           treeName={activeTree.name}
@@ -344,6 +388,13 @@ export default function Home() {
           tree={activeTree}
           initialPlatformId={activePlatform.id}
           onClose={() => setCompareOpen(false)}
+        />
+      )}
+      {resetConfirmOpen && (
+        <ResetConfirmModal
+          platformName={activePlatform.name}
+          onConfirm={handleConfirmReset}
+          onClose={() => setResetConfirmOpen(false)}
         />
       )}
     </div>
