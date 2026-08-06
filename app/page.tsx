@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CheckCircle2, Pencil, TriangleAlert } from "lucide-react";
 
+import { DeleteNodeConfirmModal } from "@/components/DeleteNodeConfirmModal";
 import { LegendPanel } from "@/components/LegendPanel";
 import { MindmapCanvas } from "@/components/MindmapCanvas";
 import { PlatformTabsBar } from "@/components/PlatformTabsBar";
@@ -13,7 +14,15 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Toolbar } from "@/components/Toolbar";
 import { sampleTree } from "@/data/sampleTree";
 import { deleteSlotRequest, fetchSlot, fetchSlots, saveSlot } from "@/lib/api";
-import { collectAllIds, generateChildId, updateNodeById } from "@/lib/treeUtils";
+import {
+  collectAllIds,
+  findNodeById,
+  generateChildId,
+  getNodeDepth,
+  getTypeLabelForDepth,
+  removeNodeById,
+  updateNodeById,
+} from "@/lib/treeUtils";
 import type { PlatformInstance, TreeFile, TreeNode, TreeSlot, TreeSlotSummary } from "@/lib/types";
 
 import styles from "./page.module.css";
@@ -36,8 +45,45 @@ export default function Home() {
   const [renamingTree, setRenamingTree] = useState(false);
   const [treeNameDraft, setTreeNameDraft] = useState("");
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [deleteConfirmNodeId, setDeleteConfirmNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
   const exportRef = useRef<(() => void) | null>(null);
+
+  // Single-level (non-cumulative) undo/redo: remembers exactly one step
+  // back and one forward, not a full history stack. activeTreeRef is kept
+  // in sync via an effect (not a raw assignment during render, which the
+  // rules-of-hooks lint rule disallows) so captureUndo always reads the
+  // state as it was right before the mutation currently being applied.
+  const activeTreeRef = useRef(activeTree);
+  useEffect(() => {
+    activeTreeRef.current = activeTree;
+  });
+  const [undoSnapshot, setUndoSnapshot] = useState<TreeFile | null>(null);
+  const [redoSnapshot, setRedoSnapshot] = useState<TreeFile | null>(null);
+
+  // Stable (empty deps) so it can be safely referenced from handleNodeUpdate's
+  // own memoized useCallback without forcing that to recreate every render
+  // (which would undo MindmapCanvas's nodeTypes stability from Part 1).
+  const captureUndo = useCallback(() => {
+    setUndoSnapshot(activeTreeRef.current);
+    setRedoSnapshot(null);
+  }, []);
+
+  const handleUndo = () => {
+    if (!undoSnapshot) return;
+    setRedoSnapshot(activeTreeRef.current);
+    setActiveTree(undoSnapshot);
+    setUndoSnapshot(null);
+    setIsDirty(true);
+  };
+
+  const handleRedo = () => {
+    if (!redoSnapshot) return;
+    setUndoSnapshot(activeTreeRef.current);
+    setActiveTree(redoSnapshot);
+    setRedoSnapshot(null);
+    setIsDirty(true);
+  };
 
   useEffect(() => {
     if (!isDirty) return;
@@ -80,6 +126,10 @@ export default function Home() {
     setActiveTree(tree);
     setViewedPlatformId(tree.activePlatformId);
     setIsDirty(false);
+    // Jumping to a different tree entirely makes the old undo/redo pair
+    // meaningless rather than something to undo itself.
+    setUndoSnapshot(null);
+    setRedoSnapshot(null);
   };
 
   const refreshSlots = useCallback(async () => {
@@ -100,6 +150,7 @@ export default function Home() {
   };
 
   const handleConfirmReset = () => {
+    captureUndo();
     setActiveTree((prev) => ({
       ...prev,
       platforms: prev.platforms.map((p) =>
@@ -126,6 +177,7 @@ export default function Home() {
           id: platformId,
           name: "Default",
           root: { id: crypto.randomUUID(), label: "Untitled tree", children: [] },
+          orphans: [],
           snapshots: [],
         },
       ],
@@ -144,6 +196,7 @@ export default function Home() {
   const commitTreeName = () => {
     const trimmed = treeNameDraft.trim();
     if (trimmed && trimmed !== activeTree.name) {
+      captureUndo();
       setActiveTree((prev) => ({ ...prev, name: trimmed }));
       setIsDirty(true);
     }
@@ -170,10 +223,11 @@ export default function Home() {
       const saved = await saveSlot(slot, {
         name: name ?? activeTree.name,
         activePlatformId: viewedPlatformId,
-        platforms: activeTree.platforms.map(({ id, name: platformName, root }) => ({
+        platforms: activeTree.platforms.map(({ id, name: platformName, root, orphans }) => ({
           id,
           name: platformName,
           root,
+          orphans,
         })),
       });
       applyTree(saved);
@@ -211,6 +265,7 @@ export default function Home() {
   };
 
   const handleRenamePlatform = (id: string, name: string) => {
+    captureUndo();
     setActiveTree((prev) => ({
       ...prev,
       platforms: prev.platforms.map((p) => (p.id === id ? { ...p, name } : p)),
@@ -219,10 +274,12 @@ export default function Home() {
   };
 
   const handleDuplicatePlatform = () => {
+    captureUndo();
     const newPlatform: PlatformInstance = {
       id: crypto.randomUUID(),
       name: `${activePlatform.name} copy`,
       root: structuredClone(activePlatform.root),
+      orphans: structuredClone(activePlatform.orphans),
       snapshots: [],
     };
     setActiveTree((prev) => ({ ...prev, platforms: [...prev.platforms, newPlatform] }));
@@ -232,6 +289,7 @@ export default function Home() {
 
   const handleNodeUpdate = useCallback(
     (currentId: string, patch: Partial<TreeNode>) => {
+      captureUndo();
       setActiveTree((prev) => ({
         ...prev,
         platforms: prev.platforms.map((p) =>
@@ -245,13 +303,15 @@ export default function Home() {
       }
       setIsDirty(true);
     },
-    [viewedPlatformId],
+    [viewedPlatformId, captureUndo],
   );
 
   const handleAddChildNode = (parentId: string) => {
+    captureUndo();
     const existingIds = collectAllIds(activePlatform.root);
-    const newId = generateChildId(parentId, "New node", existingIds);
-    const newNode: TreeNode = { id: newId, label: "New node", children: [] };
+    const childType = getTypeLabelForDepth(getNodeDepth(activePlatform.root, parentId) + 1);
+    const newId = generateChildId(parentId, "New node", childType, existingIds);
+    const newNode: TreeNode = { id: newId, label: "New node", type: childType, children: [] };
     setActiveTree((prev) => ({
       ...prev,
       platforms: prev.platforms.map((p) =>
@@ -272,6 +332,7 @@ export default function Home() {
 
   const handleDeletePlatform = (id: string) => {
     if (activeTree.platforms.length <= 1) return;
+    captureUndo();
     const platforms = activeTree.platforms.filter((p) => p.id !== id);
     const nextViewedId = viewedPlatformId === id ? platforms[0].id : viewedPlatformId;
     setActiveTree((prev) => ({
@@ -282,6 +343,38 @@ export default function Home() {
     setViewedPlatformId(nextViewedId);
     setIsDirty(true);
   };
+
+  const handleDeleteNode = (nodeId: string) => {
+    captureUndo();
+    setActiveTree((prev) => ({
+      ...prev,
+      platforms: prev.platforms.map((p) => {
+        if (p.id !== viewedPlatformId) return p;
+
+        const orphanIndex = p.orphans.findIndex((orphan) => orphan.id === nodeId);
+        if (orphanIndex !== -1) {
+          const removed = p.orphans[orphanIndex];
+          const remaining = p.orphans.filter((_, index) => index !== orphanIndex);
+          return { ...p, orphans: [...remaining, ...removed.children] };
+        }
+
+        const result = removeNodeById(p.root, nodeId);
+        if (!result) return p; // e.g. attempted delete of the true root
+        return { ...p, root: result.tree, orphans: [...p.orphans, ...result.removedChildren] };
+      }),
+    }));
+    setSelectedNodeId(null);
+    setDeleteConfirmNodeId(null);
+    setIsDirty(true);
+  };
+
+  const deleteTargetNode = deleteConfirmNodeId
+    ? (findNodeById(activePlatform.root, deleteConfirmNodeId) ??
+      activePlatform.orphans
+        .map((orphan) => findNodeById(orphan, deleteConfirmNodeId))
+        .find((found) => found) ??
+      null)
+    : null;
 
   return (
     <div className={styles.page}>
@@ -314,6 +407,10 @@ export default function Home() {
             onNewTree={handleNewTree}
             onToggleLegend={() => setLegendOpen((open) => !open)}
             onExport={() => exportRef.current?.()}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            undoDisabled={!undoSnapshot}
+            redoDisabled={!redoSnapshot}
           />
         </div>
         <div className={styles.headerRight}>
@@ -358,12 +455,14 @@ export default function Home() {
       <div className={styles.canvasArea}>
         <MindmapCanvas
           root={activePlatform.root}
+          orphans={activePlatform.orphans}
           treeName={activeTree.name}
           colorMode={theme}
           selectedNodeId={selectedNodeId}
           onSelectNode={setSelectedNodeId}
           onNodeUpdate={handleNodeUpdate}
           onAddChild={handleAddChildNode}
+          onRequestDeleteNode={setDeleteConfirmNodeId}
           exportRef={exportRef}
         />
         <LegendPanel open={legendOpen} onClose={() => setLegendOpen(false)} />
@@ -395,6 +494,14 @@ export default function Home() {
           platformName={activePlatform.name}
           onConfirm={handleConfirmReset}
           onClose={() => setResetConfirmOpen(false)}
+        />
+      )}
+      {deleteConfirmNodeId && deleteTargetNode && (
+        <DeleteNodeConfirmModal
+          nodeLabel={deleteTargetNode.label}
+          childCount={deleteTargetNode.children.length}
+          onConfirm={() => handleDeleteNode(deleteConfirmNodeId)}
+          onClose={() => setDeleteConfirmNodeId(null)}
         />
       )}
     </div>
