@@ -4,7 +4,13 @@ import { useRef, useState } from "react";
 import type { PointerEvent as ReactPointerEvent } from "react";
 import { FilePlus, Lock, Pin, PinOff, Plus, Trash2 } from "lucide-react";
 
-import { collectAllIds, getNodeDepth, getTypeLabelForDepth } from "@/lib/treeUtils";
+import {
+  collectAllIds,
+  findParentId,
+  generateChildId,
+  getNodeDepth,
+  getTypeLabelForDepth,
+} from "@/lib/treeUtils";
 import type { TreeNode } from "@/lib/types";
 
 import { STATUS_META } from "./StatusBadge";
@@ -17,6 +23,7 @@ interface NodeDetailPanelProps {
   onTogglePinned: () => void;
   onUpdate: (currentId: string, patch: Partial<TreeNode>) => void;
   onAddChild: (parentId: string) => void;
+  onRequestDelete: (id: string) => void;
   onClose: () => void;
 }
 
@@ -27,6 +34,7 @@ export function NodeDetailPanel({
   onTogglePinned,
   onUpdate,
   onAddChild,
+  onRequestDelete,
   onClose,
 }: NodeDetailPanelProps) {
   const [lastNodeId, setLastNodeId] = useState<string | null>(node?.id ?? null);
@@ -90,8 +98,28 @@ export function NodeDetailPanel({
 
   const commitLabel = () => {
     const trimmed = draftLabel.trim();
-    if (trimmed) onUpdate(node.id, { label: trimmed });
-    else setDraftLabel(node.label);
+    if (!trimmed) {
+      setDraftLabel(node.label);
+      return;
+    }
+    if (trimmed === node.label) return;
+
+    // If this node's id still matches what the auto-generated scheme would
+    // have produced for its OLD label, it hasn't been manually customized —
+    // keep it in sync with the new label. Otherwise leave a custom id alone.
+    const parentId = findParentId(root, node.id);
+    if (parentId) {
+      const childType = getTypeLabelForDepth(getNodeDepth(root, node.id));
+      const existingIds = collectAllIds(root);
+      existingIds.delete(node.id);
+      const autoIdForOldLabel = generateChildId(parentId, node.label, childType, existingIds);
+      if (node.id === autoIdForOldLabel) {
+        const newId = generateChildId(parentId, trimmed, childType, existingIds);
+        onUpdate(node.id, { label: trimmed, id: newId });
+        return;
+      }
+    }
+    onUpdate(node.id, { label: trimmed });
   };
 
   const commitNotes = () => {
@@ -145,6 +173,17 @@ export function NodeDetailPanel({
           <h2 className={styles.title}>Edit node</h2>
         </div>
         <div className={styles.headerActions} data-no-drag>
+          {node.id !== root.id && (
+            <button
+              type="button"
+              className={styles.deleteButton}
+              onClick={() => onRequestDelete(node.id)}
+              aria-label="Delete node"
+              data-no-drag
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
           <button
             type="button"
             className={styles.pinButton}

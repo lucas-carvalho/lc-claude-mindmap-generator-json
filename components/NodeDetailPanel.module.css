@@ -67,6 +67,24 @@
   background: color-mix(in srgb, #2563eb 12%, transparent);
 }
 
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.deleteButton:hover {
+  color: #dc2626;
+  background: color-mix(in srgb, #dc2626 12%, transparent);
+}
+
 .closeButton {
   border: none;
   background: transparent;
