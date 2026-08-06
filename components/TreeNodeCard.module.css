@@ -100,7 +100,13 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
 }
 
+.root .headerRow {
+  justify-content: center;
+  gap: 10px;
+}
+
 .root .label {
+  margin-top: 6px;
   font-size: 15px;
   font-weight: 600;
 }
@@ -113,6 +119,11 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 35%, transparent);
 }
 
+.disconnected {
+  border-style: dashed;
+  background: color-mix(in srgb, currentColor 4%, var(--background));
+}
+
 .headerRow {
   display: flex;
   align-items: center;
@@ -122,10 +133,18 @@
 }
 
 .type {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.unlinkIcon {
+  color: #9ca3af;
+  flex-shrink: 0;
 }
 
 .label {

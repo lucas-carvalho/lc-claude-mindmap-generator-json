@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CircleUserRound } from "lucide-react";
+import { CircleUserRound, Unlink } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 
 import { getAssigneeColor, getInitials } from "@/lib/treeUtils";
@@ -73,7 +73,7 @@ export function TreeNodeCard({ data, selected, onStatusChange, onAssigneeChange 
 
   return (
     <div
-      className={`${styles.card} ${isRoot ? styles.root : ""} ${selected ? styles.selected : ""}`}
+      className={`${styles.card} ${isRoot ? styles.root : ""} ${selected ? styles.selected : ""} ${data.disconnected ? styles.disconnected : ""}`}
       style={{ borderColor: data.branchColor, background: isRoot ? data.branchColor : undefined }}
     >
       {onAssigneeChange ? (
@@ -114,7 +114,12 @@ export function TreeNodeCard({ data, selected, onStatusChange, onAssigneeChange 
       )}
       {!isRoot && <Handle type="target" position={isLeft ? Position.Right : Position.Left} />}
       <div className={styles.headerRow}>
-        {data.type && <span className={styles.type}>{data.type}</span>}
+        {data.type && (
+          <span className={styles.type}>
+            {data.disconnected && <Unlink size={11} className={styles.unlinkIcon} />}
+            {data.type}
+          </span>
+        )}
         {onStatusChange ? (
           <div className={`${styles.statusWrapper} nodrag nopan`} ref={statusRef}>
             <button
