@@ -1,15 +1,11 @@
 .toolbar {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   padding: 6px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
   background: var(--background);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
 }
 
 .button {
@@ -20,7 +16,7 @@
   font-size: 13px;
   font-weight: 500;
   border-radius: 999px;
-  border: none;
+  border: 1px solid color-mix(in srgb, currentColor 20%, transparent);
   background: transparent;
   color: var(--foreground);
   cursor: pointer;
@@ -28,4 +24,22 @@
 
 .button:hover {
   background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.buttonPrimary {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.buttonPrimary:hover {
+  background: color-mix(in srgb, #2563eb 12%, transparent);
+}
+
+.buttonDanger {
+  border-color: #dc2626;
+  color: #dc2626;
+}
+
+.buttonDanger:hover {
+  background: color-mix(in srgb, #dc2626 12%, transparent);
 }

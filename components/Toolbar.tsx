@@ -11,7 +11,7 @@ interface ToolbarProps {
   onOpenSave: () => void;
   onOpenLoad: () => void;
   onOpenCompare: () => void;
-  onResetSample: () => void;
+  onOpenReset: () => void;
   onUploadTree: (tree: TreeFile) => void;
   onNewTree: () => void;
   onToggleLegend: () => void;
@@ -22,7 +22,7 @@ export function Toolbar({
   onOpenSave,
   onOpenLoad,
   onOpenCompare,
-  onResetSample,
+  onOpenReset,
   onUploadTree,
   onNewTree,
   onToggleLegend,
@@ -34,7 +34,7 @@ export function Toolbar({
         <FolderOpen size={14} />
         Load
       </button>
-      <button type="button" className={styles.button} onClick={onOpenSave}>
+      <button type="button" className={`${styles.button} ${styles.buttonPrimary}`} onClick={onOpenSave}>
         <Save size={14} />
         Save
       </button>
@@ -51,7 +51,7 @@ export function Toolbar({
         <Download size={14} />
         Export
       </button>
-      <button type="button" className={styles.button} onClick={onResetSample}>
+      <button type="button" className={`${styles.button} ${styles.buttonDanger}`} onClick={onOpenReset}>
         <RotateCcw size={14} />
         Reset
       </button>

@@ -56,16 +56,42 @@
   color: var(--foreground);
 }
 
+.headerToolbar {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+}
+
 .headerRight {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
 }
 
-.slotBadge {
-  font-size: 13px;
-  color: color-mix(in srgb, currentColor 55%, transparent);
+.unsavedBadge,
+.savedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
   white-space: nowrap;
+}
+
+.unsavedBadge {
+  color: #d97706;
+  background: color-mix(in srgb, #d97706 15%, transparent);
+  border: 1px solid color-mix(in srgb, #d97706 35%, transparent);
+}
+
+.savedBadge {
+  color: #16a34a;
+  background: color-mix(in srgb, #16a34a 12%, transparent);
+  border: 1px solid color-mix(in srgb, #16a34a 30%, transparent);
 }
 
 .platformCaption {
