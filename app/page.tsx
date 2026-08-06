@@ -24,6 +24,7 @@ import {
   updateNodeById,
 } from "@/lib/treeUtils";
 import type { PlatformInstance, TreeFile, TreeNode, TreeSlot, TreeSlotSummary } from "@/lib/types";
+import { buildTreeReportSvg } from "@/lib/svgReport";
 
 import styles from "./page.module.css";
 
@@ -47,7 +48,6 @@ export default function Home() {
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [deleteConfirmNodeId, setDeleteConfirmNodeId] = useState<string | null>(null);
   const [isDirty, setIsDirty] = useState(false);
-  const exportRef = useRef<(() => void) | null>(null);
 
   // Single-level (non-cumulative) undo/redo: remembers exactly one step
   // back and one forward, not a full history stack. activeTreeRef is kept
@@ -368,6 +368,22 @@ export default function Home() {
     setIsDirty(true);
   };
 
+  const handleExport = () => {
+    const svg = buildTreeReportSvg({
+      treeName: activeTree.name,
+      platformName: activePlatform.name,
+      root: activePlatform.root,
+      orphans: activePlatform.orphans,
+    });
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.download = `${activeTree.name.trim().replace(/\s+/g, "-").toLowerCase() || "mindmap"}.svg`;
+    link.href = url;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const deleteTargetNode = deleteConfirmNodeId
     ? (findNodeById(activePlatform.root, deleteConfirmNodeId) ??
       activePlatform.orphans
@@ -406,7 +422,7 @@ export default function Home() {
             onUploadTree={handleUploadTree}
             onNewTree={handleNewTree}
             onToggleLegend={() => setLegendOpen((open) => !open)}
-            onExport={() => exportRef.current?.()}
+            onExport={handleExport}
             onUndo={handleUndo}
             onRedo={handleRedo}
             undoDisabled={!undoSnapshot}
@@ -456,14 +472,12 @@ export default function Home() {
         <MindmapCanvas
           root={activePlatform.root}
           orphans={activePlatform.orphans}
-          treeName={activeTree.name}
           colorMode={theme}
           selectedNodeId={selectedNodeId}
           onSelectNode={setSelectedNodeId}
           onNodeUpdate={handleNodeUpdate}
           onAddChild={handleAddChildNode}
           onRequestDeleteNode={setDeleteConfirmNodeId}
-          exportRef={exportRef}
         />
         <LegendPanel open={legendOpen} onClose={() => setLegendOpen(false)} />
       </div>
