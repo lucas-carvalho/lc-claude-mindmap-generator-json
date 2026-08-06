@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Sora } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,6 +12,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const sora = Sora({
+  variable: "--font-display",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "Mindmap Generator JSON by LC",
   description: "Local prototype: fixed-template mindmap visualization over abstracted JSON tree data.",
@@ -21,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${sora.variable}`}
       data-theme="light"
       suppressHydrationWarning
     >
