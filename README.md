@@ -39,9 +39,12 @@ handful of local API routes reading/writing `data/trees/*.json`.
   keeps its own children visible as detached "unlinked" subtrees instead of
   removing them, until they're reconnected (not yet supported) or deleted.
 - Single-level **Undo/Redo** for the last action.
-- Light/dark **theme toggle**, **SVG export** of the whole diagram, and a
-  non-interactive **Legend** explaining the diagram's structure/status/
-  assignment conventions.
+- Light/dark **theme toggle** and a non-interactive **Legend** explaining the
+  diagram's structure/status/assignment conventions.
+- **SVG export** as a themed delivery report — built natively (not a DOM
+  screenshot), always in a fixed light palette regardless of the app's
+  current theme, with a header showing the tree name, platform, and a
+  total/per-status node count above the diagram.
 - **Reset** restores the bundled sample data for one platform at a time,
   behind a dialog requiring you to type that platform's name to confirm.
 
@@ -52,8 +55,10 @@ handful of local API routes reading/writing `data/trees/*.json`.
 - [`d3-hierarchy`](https://github.com/d3/d3-hierarchy) — computes node positions for the radial layout.
 - [`zod`](https://zod.dev/) — schema validation for every tree, shared by the client and the API routes.
 - [`lucide-react`](https://lucide.dev/) — icons throughout the toolbar/panels.
-- [`html-to-image`](https://github.com/bubkoo/html-to-image) — powers the SVG export.
 - `next/font/google` (Geist + Sora, no extra dependency) — the app's two typefaces.
+
+SVG export (`lib/svgReport.ts`) is hand-built from the same layout data used
+on screen — no rendering dependency needed.
 
 ## Getting started
 
