@@ -4,6 +4,7 @@ export interface PlatformSaveInput {
   id: string;
   name: string;
   root: TreeNode;
+  orphans: TreeNode[];
 }
 
 async function parseJsonOrThrow<T>(response: Response): Promise<T> {

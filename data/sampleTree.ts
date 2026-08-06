@@ -88,6 +88,7 @@ export const sampleTree: TreeFile = {
       id: DEFAULT_PLATFORM_ID,
       name: "Default",
       root: sampleRoot,
+      orphans: [],
       snapshots: [],
     },
   ],

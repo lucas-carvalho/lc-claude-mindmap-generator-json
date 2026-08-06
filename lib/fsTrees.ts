@@ -12,6 +12,7 @@ export interface PlatformSaveInput {
   id: string;
   name: string;
   root: TreeNode;
+  orphans: TreeNode[];
 }
 
 const DATA_DIR = path.join(process.cwd(), "data", "trees");
@@ -93,11 +94,22 @@ export async function writeSlot(
     const prior = existingById.get(incoming.id);
     const snapshots = prior
       ? [
-          { id: randomUUID(), capturedAt: existing!.updatedAt, root: prior.root },
+          {
+            id: randomUUID(),
+            capturedAt: existing!.updatedAt,
+            root: prior.root,
+            orphans: prior.orphans,
+          },
           ...prior.snapshots,
         ].slice(0, MAX_SNAPSHOTS_PER_SLOT)
       : [];
-    return { id: incoming.id, name: incoming.name, root: incoming.root, snapshots };
+    return {
+      id: incoming.id,
+      name: incoming.name,
+      root: incoming.root,
+      orphans: incoming.orphans,
+      snapshots,
+    };
   });
 
   const next: TreeFile = {

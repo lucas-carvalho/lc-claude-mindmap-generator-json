@@ -19,12 +19,14 @@ export const TreeSnapshotSchema: z.ZodType<TreeSnapshot> = z.object({
   id: z.string().min(1),
   capturedAt: z.string(),
   root: TreeNodeSchema,
+  orphans: z.array(TreeNodeSchema).default([]),
 });
 
 export const PlatformInstanceSchema: z.ZodType<PlatformInstance> = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(60),
   root: TreeNodeSchema,
+  orphans: z.array(TreeNodeSchema).default([]),
   snapshots: z.array(TreeSnapshotSchema).default([]),
 });
 
@@ -42,6 +44,7 @@ export const PlatformSaveInputSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1).max(60),
   root: TreeNodeSchema,
+  orphans: z.array(TreeNodeSchema).default([]),
 });
 
 export const TreeSaveRequestSchema = z.object({

@@ -18,12 +18,17 @@ export interface TreeSnapshot {
   id: string;
   capturedAt: string;
   root: TreeNode;
+  /** Detached subtrees at the time of this snapshot — see PlatformInstance.orphans. */
+  orphans: TreeNode[];
 }
 
 export interface PlatformInstance {
   id: string;
   name: string;
   root: TreeNode;
+  /** Subtrees whose parent was deleted — still visible, but with no path
+   * back to `root` (so no computed Type) until reconnected or deleted. */
+  orphans: TreeNode[];
   snapshots: TreeSnapshot[];
 }
 
