@@ -19,11 +19,16 @@ jobs:
 
       - run: npm ci
 
+      # Next.js generates ambient route types (e.g. LayoutProps) into
+      # .next/types as a side effect of building — on a fresh checkout
+      # (no .next/ yet, unlike a local machine with prior builds), a
+      # standalone `tsc --noEmit` run before any build fails on those
+      # names. Build first so they exist for the checks below.
+      - name: Build
+        run: npm run build
+
       - name: Type-check
         run: npx tsc --noEmit
 
       - name: Lint
         run: npm run lint
-
-      - name: Build
-        run: npm run build
